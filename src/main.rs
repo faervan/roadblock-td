@@ -1,6 +1,7 @@
 use bevy::{
     input::mouse::AccumulatedMouseMotion, prelude::*, window::PrimaryWindow, winit::WinitWindows,
 };
+use bordered_rectangle::BorderedRectangle;
 use tile::Tile;
 
 mod bordered_rectangle;
@@ -72,7 +73,7 @@ fn spawn_map(
     let rows = 80;
     let columns = 140;
 
-    let position = |total: f32, current| -(total * 0.5 * TILE_SIZE) + current * (TILE_SIZE + 1.);
+    let position = |total: f32, current| -(total * 0.5 * TILE_SIZE) + current * TILE_SIZE;
 
     for row in 0..rows {
         let y = position(rows as f32, row as f32);
@@ -81,7 +82,7 @@ fn spawn_map(
             let tile = Tile::new(row, col);
             commands.spawn((
                 tile,
-                Mesh2d(meshes.add(Rectangle::from_length(TILE_SIZE))),
+                Mesh2d(meshes.add(BorderedRectangle::new(Vec2::splat(TILE_SIZE), 1.))),
                 MeshMaterial2d(materials.add(Color::hsl(246., 1., 0.5))),
                 Transform {
                     translation: Vec3::new(x, y, 0.),

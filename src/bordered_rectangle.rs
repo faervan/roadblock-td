@@ -11,6 +11,15 @@ pub struct BorderedRectangle {
     border_radius: f32,
 }
 
+impl BorderedRectangle {
+    pub fn new(size: Vec2, radius: f32) -> Self {
+        Self {
+            half_size: size / 2.,
+            border_radius: radius,
+        }
+    }
+}
+
 /// By reference of https://docs.rs/bevy_mesh/0.15.3/src/bevy_mesh/primitives/dim2.rs.html#847
 impl From<BorderedRectangle> for Mesh {
     fn from(value: BorderedRectangle) -> Self {
@@ -77,11 +86,26 @@ impl From<BorderedRectangle> for Mesh {
             // right
             10, 6, 11, //
             6, 5, 11, //
-                // top right
+            // top right
+            9, 10, 8, //
+            10, 11, 8, //
+            // top
+            15, 14, 9, //
+            14, 10, 9, //
+            // top left
+            12, 13, 15, //
+            13, 14, 15, //
+            // left
+            13, 3, 14, //
+            3, 2, 14, //
         ]);
         Mesh::new(
             PrimitiveTopology::TriangleList,
             RenderAssetUsages::default(),
         )
+        .with_inserted_indices(indices)
+        .with_inserted_attribute(Mesh::ATTRIBUTE_POSITION, positions)
+        .with_inserted_attribute(Mesh::ATTRIBUTE_NORMAL, normals)
+        .with_inserted_attribute(Mesh::ATTRIBUTE_UV_0, uvs)
     }
 }
