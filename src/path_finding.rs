@@ -4,7 +4,7 @@ use bevy::{
 };
 
 use crate::{
-    Enemy, EnemyPath,
+    enemy::{Enemy, EnemyPath},
     grid::{GridPos, Tile},
 };
 
@@ -16,10 +16,7 @@ impl Plugin for PathfindingPlugin {
     }
 }
 
-fn try_get_target(
-    tiles: &HashSet<&GridPos>,
-    enemy: &Enemy,
-) -> Option<HashMap<GridPos, GridPos>> {
+fn try_get_target(tiles: &HashSet<&GridPos>, enemy: &Enemy) -> Option<HashMap<GridPos, GridPos>> {
     let distance = enemy.current.distance_to(&enemy.goal);
     // This is the A* algorithm, see https://www.youtube.com/watch?v=-L-WgKMFuhE
 
@@ -68,10 +65,7 @@ pub fn enemy_get_path(
     enemies: Query<(&Enemy, Entity), Without<EnemyPath>>,
     tiles: Query<&Tile>,
 ) {
-    let mut tile_set: HashSet<&GridPos> = HashSet::new();
-    for tile in tiles.iter() {
-        tile_set.insert(&tile.pos);
-    }
+    let tile_set: HashSet<&GridPos> = tiles.iter().map(|t| &t.pos).collect();
 
     let get_path = |closed: HashMap<GridPos, GridPos>, enemy: &Enemy| {
         let mut path = vec![];

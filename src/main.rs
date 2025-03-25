@@ -4,11 +4,13 @@ use bevy::{
     prelude::*,
     window::PrimaryWindow,
 };
-use grid::{GridPlugin, GridPos, Tile};
+use bevy_inspector_egui::quick::WorldInspectorPlugin;
+use grid::GridPlugin;
 use path_finding::PathfindingPlugin;
 use tower::TowerPlugin;
 
 mod bordered_rectangle;
+mod enemy;
 mod grid;
 mod path_finding;
 mod tower;
@@ -42,6 +44,9 @@ fn main() {
         ..default()
     }));
 
+    if std::env::args().any(|a| a == "--egui") {
+        app.add_plugins(WorldInspectorPlugin::new());
+    }
     app.add_plugins((PathfindingPlugin, GridPlugin, TowerPlugin));
     app.add_systems(Startup, init);
     app.add_systems(Update, (pan_camera, exit_on_ctrl_q));
@@ -54,15 +59,6 @@ struct MapInfo {
     /// Bottom left anchor of the map in bevy's coordinate system
     anchor: Vec2,
 }
-
-#[derive(Component)]
-struct Enemy {
-    current: GridPos,
-    goal: GridPos,
-}
-
-#[derive(Component)]
-struct EnemyPath(Vec<GridPos>);
 
 fn init(mut commands: Commands) {
     commands.spawn(Camera2d);
