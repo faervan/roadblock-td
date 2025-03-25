@@ -68,8 +68,8 @@ pub enum TileType {
 
 #[derive(Reflect, PartialEq, Eq, Hash, Clone, Copy, Default)]
 pub struct GridPos {
-    row: isize,
-    col: isize,
+    pub row: isize,
+    pub col: isize,
 }
 
 impl Tile {
