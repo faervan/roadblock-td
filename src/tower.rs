@@ -48,6 +48,10 @@ fn place_tower(
                     let entity = commands
                         .spawn((
                             Tower,
+                            Tile {
+                                pos: grid_pos,
+                                tile_type: TileType::Tower,
+                            },
                             Sprite::from_color(Color::srgb(0.0, 0.5, 1.0), Vec2::splat(TILE_SIZE)),
                             Transform {
                                 translation: grid_to_world_coords(grid_pos).extend(1.0),
