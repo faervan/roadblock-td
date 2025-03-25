@@ -2,9 +2,11 @@ use bevy::{
     input::mouse::AccumulatedMouseMotion, prelude::*, window::PrimaryWindow, winit::WinitWindows,
 };
 use bordered_rectangle::BorderedRectangle;
+use path_finding::enemy_get_path;
 use tile::Tile;
 
 mod bordered_rectangle;
+mod path_finding;
 mod tile;
 
 const TILE_SIZE: f32 = 10.;
@@ -19,7 +21,7 @@ fn main() {
             ..Default::default()
         }))
         .add_systems(Startup, (init, spawn_map))
-        .add_systems(Update, (pan_camera, exit_on_ctrl_q))
+        .add_systems(Update, (enemy_get_path, pan_camera, exit_on_ctrl_q))
         .run();
 }
 
@@ -29,6 +31,15 @@ struct MapInfo {
     /// Bottom left anchor of the map in bevy's coordinate system
     anchor: Vec2,
 }
+
+#[derive(Component)]
+struct Enemy {
+    current: Tile,
+    goal: Tile,
+}
+
+#[derive(Component)]
+struct EnemyPath(Vec<Tile>);
 
 fn init(
     mut commands: Commands,
