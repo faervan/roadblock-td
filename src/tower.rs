@@ -36,7 +36,7 @@ impl Tower {
 
     fn size(&self) -> (isize, isize) {
         match self {
-            Self:: Wall => (4, 2),
+            Self::Wall => (4, 2),
             Self::SpikedWall => (4, 2),
             Self::Canon => (3, 3),
         }
@@ -88,7 +88,7 @@ fn tower_tile() -> Tile {
 #[derive(Reflect, Resource)]
 #[reflect(Resource)]
 struct SelectedTower {
-    tower: Tower
+    tower: Tower,
 }
 
 fn place_tower(
@@ -97,7 +97,7 @@ fn place_tower(
     cam: Single<(&Camera, &GlobalTransform)>,
     mouse_input: Res<ButtonInput<MouseButton>>,
     mut grid: ResMut<Grid>,
-    tower: Res<SelectedTower>
+    tower: Res<SelectedTower>,
 ) {
     if !mouse_input.just_pressed(MouseButton::Left) {
         return;
@@ -113,7 +113,10 @@ fn place_tower(
             if let Some(grid_pos) = world_to_grid_coords(world_pos) {
                 for i in 0..tower.tower.size().0 {
                     for j in 0..tower.tower.size().1 {
-                        let pos = GridPos { col: grid_pos.col + i, row: grid_pos.row + j};
+                        let pos = GridPos {
+                            col: grid_pos.col + i,
+                            row: grid_pos.row + j,
+                        };
                         if !grid.is_free(&pos) {
                             return;
                         }
@@ -128,24 +131,31 @@ fn place_tower(
                         },
                         Sprite {
                             color: Color::srgb(0.0, 0.5, 1.0),
-                            custom_size: Some(Vec2 {x: tower.tower.size().0 as f32 * TILE_SIZE, y: tower.tower.size().1 as f32 * TILE_SIZE}),
+                            custom_size: Some(Vec2 {
+                                x: tower.tower.size().0 as f32 * TILE_SIZE,
+                                y: tower.tower.size().1 as f32 * TILE_SIZE,
+                            }),
                             anchor: bevy::sprite::Anchor::BottomLeft,
                             ..default()
                         },
                         //Sprite::from_color(Color::srgb(0.0, 0.5, 1.0), Vec2 {x: tower.tower.size().0 as f32 * TILE_SIZE, y: tower.tower.size().1 as f32 * TILE_SIZE}),
                         Transform {
-                            translation: (grid_to_world_coords(grid_pos) - (TILE_SIZE * 0.5)).extend(1.0),
+                            translation: (grid_to_world_coords(grid_pos) - (TILE_SIZE * 0.5))
+                                .extend(1.0),
                             ..default()
                         },
                     ))
                     .id();
-                
-                    for i in 0..tower.tower.size().0 {
-                        for j in 0..tower.tower.size().1 {
-                            let pos = GridPos { col: grid_pos.col + i, row: grid_pos.row + j};
-                            grid.tower.insert(pos, entity);
-                        }
+
+                for i in 0..tower.tower.size().0 {
+                    for j in 0..tower.tower.size().1 {
+                        let pos = GridPos {
+                            col: grid_pos.col + i,
+                            row: grid_pos.row + j,
+                        };
+                        grid.tower.insert(pos, entity);
                     }
+                }
             }
         } else {
             warn!("Unable to get Cursor Position {:?}", world_pos.unwrap_err())
