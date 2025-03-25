@@ -5,6 +5,7 @@ use bevy::{
     window::PrimaryWindow,
 };
 use bevy_inspector_egui::quick::WorldInspectorPlugin;
+use enemy::EnemyPlugin;
 use grid::GridPlugin;
 use path_finding::PathfindingPlugin;
 use tower::TowerPlugin;
@@ -49,7 +50,7 @@ fn main() {
     }
     app.register_type::<MapInfo>();
 
-    app.add_plugins((PathfindingPlugin, GridPlugin, TowerPlugin));
+    app.add_plugins((PathfindingPlugin, GridPlugin, TowerPlugin, EnemyPlugin));
     app.add_systems(Startup, init);
     app.add_systems(Update, (pan_camera, exit_on_ctrl_q));
     app.run();

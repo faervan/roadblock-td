@@ -5,7 +5,7 @@ use bevy::{
 
 use crate::{
     enemy::{Enemy, EnemyPath},
-    grid::{GridPos, Tile},
+    grid::{Grid, GridPos},
 };
 
 pub struct PathfindingPlugin;
@@ -16,7 +16,7 @@ impl Plugin for PathfindingPlugin {
     }
 }
 
-fn try_get_target(tiles: &HashSet<&GridPos>, enemy: &Enemy) -> Option<HashMap<GridPos, GridPos>> {
+fn try_get_target(tiles: &HashSet<GridPos>, enemy: &Enemy) -> Option<HashMap<GridPos, GridPos>> {
     let distance = enemy.current.distance_to(&enemy.goal);
     // This is the A* algorithm, see https://www.youtube.com/watch?v=-L-WgKMFuhE
 
@@ -63,10 +63,8 @@ fn try_get_target(tiles: &HashSet<&GridPos>, enemy: &Enemy) -> Option<HashMap<Gr
 pub fn enemy_get_path(
     mut commands: Commands,
     enemies: Query<(&Enemy, Entity), Without<EnemyPath>>,
-    tiles: Query<&Tile>,
+    grid: Res<Grid>,
 ) {
-    let tile_set: HashSet<&GridPos> = tiles.iter().map(|t| &t.pos).collect();
-
     let get_path = |closed: HashMap<GridPos, GridPos>, enemy: &Enemy| {
         let mut path = vec![];
         let mut current = enemy.goal;
@@ -77,15 +75,15 @@ pub fn enemy_get_path(
         path
     };
     for (enemy, entity) in &enemies {
-        if let Some(closed) = try_get_target(&tile_set, enemy) {
+        if let Some(closed) = try_get_target(&grid.empty_tiles(), enemy) {
             let path = get_path(closed, enemy);
             if !path.is_empty() {
-                commands.entity(entity).insert(EnemyPath(path));
+                commands.entity(entity).insert(EnemyPath::new(path));
                 return;
             }
         } else {
-            debug!("No path was found! Despawning!");
+            info!("No path was found! Despawning!");
+            commands.entity(entity).despawn();
         }
-        commands.entity(entity).despawn();
     }
 }

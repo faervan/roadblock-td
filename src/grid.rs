@@ -27,8 +27,8 @@ impl Plugin for GridPlugin {
 #[reflect(Resource)]
 pub struct Grid {
     pub tower: HashMap<GridPos, Entity>,
-    enemy_spawn: HashMap<GridPos, Entity>,
-    enemy_goal: HashMap<GridPos, Entity>,
+    pub enemy_spawn: HashMap<GridPos, Entity>,
+    pub enemy_goal: HashMap<GridPos, Entity>,
 }
 
 impl Grid {
@@ -36,6 +36,19 @@ impl Grid {
         !self.tower.contains_key(position)
             && !self.enemy_spawn.contains_key(position)
             && !self.enemy_goal.contains_key(position)
+    }
+
+    pub fn empty_tiles(&self) -> HashSet<GridPos> {
+        let mut empty = HashSet::new();
+        for row in 0..ROWS {
+            for col in 0..COLUMNS {
+                let position = GridPos::new(row, col);
+                if !self.tower.contains_key(&position) {
+                    empty.insert(position);
+                }
+            }
+        }
+        empty
     }
 }
 
@@ -77,7 +90,7 @@ impl GridPos {
         other.row.abs_diff(self.row) + other.col.abs_diff(self.col)
     }
 
-    pub fn neighbors(&self, tiles: &HashSet<&GridPos>) -> Vec<GridPos> {
+    pub fn neighbors(&self, tiles: &HashSet<GridPos>) -> Vec<GridPos> {
         let mut neighbors = vec![];
 
         let mut push_maybe = |row, col| {
