@@ -44,18 +44,18 @@ fn place_tower(
         let world_pos = camera.viewport_to_world_2d(cam_transform, mouse_pos);
         if let Ok(world_pos) = world_pos {
             if let Some(grid_pos) = world_to_grid_coords(world_pos) {
-                if grid.grid.get(&grid_pos).is_none() {
+                if grid.is_free(&grid_pos) {
                     let entity = commands
                         .spawn((
                             Tower,
                             Sprite::from_color(Color::srgb(0.0, 0.5, 1.0), Vec2::splat(TILE_SIZE)),
                             Transform {
-                                translation: grid_to_world_coords(grid_pos).extend(0.0),
+                                translation: grid_to_world_coords(grid_pos).extend(1.0),
                                 ..default()
                             },
                         ))
                         .id();
-                    grid.grid.insert(grid_pos, (entity, TileType::Tower));
+                    grid.tower.insert(grid_pos, entity);
                 }
             }
         } else {

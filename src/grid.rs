@@ -6,14 +6,16 @@ use bevy::{ecs::system::Resource, utils::HashSet};
 
 pub const ROWS: isize = 80;
 pub const COLUMNS: isize = 140;
-pub const TILE_SIZE: f32 = 10.;
+pub const TILE_SIZE: f32 = 15.;
 
 pub struct GridPlugin;
 
 impl Plugin for GridPlugin {
     fn build(&self, app: &mut App) {
         app.insert_resource(Grid {
-            grid: HashMap::new(),
+            tower: HashMap::new(),
+            enemy_spawn: HashMap::new(),
+            enemy_goal: HashMap::new(),
         });
         app.register_type::<Grid>();
         app.register_type::<Tile>();
@@ -24,7 +26,17 @@ impl Plugin for GridPlugin {
 #[derive(Reflect, Resource)]
 #[reflect(Resource)]
 pub struct Grid {
-    pub grid: HashMap<GridPos, (Entity, TileType)>,
+    pub tower: HashMap<GridPos, Entity>,
+    enemy_spawn: HashMap<GridPos, Entity>,
+    enemy_goal: HashMap<GridPos, Entity>,
+}
+
+impl Grid {
+    pub fn is_free(&self, position: &GridPos) -> bool {
+        !self.tower.contains_key(position)
+            && !self.enemy_spawn.contains_key(position)
+            && !self.enemy_goal.contains_key(position)
+    }
 }
 
 #[derive(Reflect, Component, Clone, Copy)]
