@@ -19,14 +19,13 @@ impl Plugin for PathfindingPlugin {
 fn try_get_target(
     tiles: &HashSet<&GridPos>,
     enemy: &Enemy,
-    enemy_tile: &Tile,
 ) -> Option<HashMap<GridPos, GridPos>> {
-    let distance = enemy_tile.pos.distance_to(&enemy.goal);
+    let distance = enemy.current.distance_to(&enemy.goal);
     // This is the A* algorithm, see https://www.youtube.com/watch?v=-L-WgKMFuhE
 
     // open contains f_cost, g_cost and parent of every tile
     let mut open: HashMap<GridPos, (usize, usize, GridPos)> =
-        HashMap::from([(enemy_tile.pos, (distance, 0, enemy_tile.pos))]);
+        HashMap::from([(enemy.current, (distance, 0, enemy.current))]);
     let mut closed: HashMap<GridPos, GridPos> = HashMap::new();
 
     while let Some((tile, (_, g_cost, parent))) = open
@@ -66,7 +65,7 @@ fn try_get_target(
 
 pub fn enemy_get_path(
     mut commands: Commands,
-    enemies: Query<(&Enemy, Entity, &Tile), Without<EnemyPath>>,
+    enemies: Query<(&Enemy, Entity), Without<EnemyPath>>,
     tiles: Query<&Tile>,
 ) {
     let mut tile_set: HashSet<&GridPos> = HashSet::new();
@@ -74,18 +73,18 @@ pub fn enemy_get_path(
         tile_set.insert(&tile.pos);
     }
 
-    let get_path = |closed: HashMap<GridPos, GridPos>, enemy: &Enemy, enemy_tile: &Tile| {
+    let get_path = |closed: HashMap<GridPos, GridPos>, enemy: &Enemy| {
         let mut path = vec![];
         let mut current = enemy.goal;
-        while current != enemy_tile.pos {
+        while current != enemy.current {
             path.push(current);
             current = closed[&current];
         }
         path
     };
-    for (enemy, entity, enemy_tile) in &enemies {
-        if let Some(closed) = try_get_target(&tile_set, enemy, enemy_tile) {
-            let path = get_path(closed, enemy, enemy_tile);
+    for (enemy, entity) in &enemies {
+        if let Some(closed) = try_get_target(&tile_set, enemy) {
+            let path = get_path(closed, enemy);
             if !path.is_empty() {
                 commands.entity(entity).insert(EnemyPath(path));
                 return;

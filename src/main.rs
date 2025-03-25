@@ -56,8 +56,8 @@ struct MapInfo {
 }
 
 #[derive(Component)]
-#[require(Tile)]
 struct Enemy {
+    current: GridPos,
     goal: GridPos,
 }
 
