@@ -8,6 +8,10 @@ pub const ROWS: isize = 80;
 pub const COLUMNS: isize = 140;
 pub const TILE_SIZE: f32 = 15.;
 
+const LINE_WIDTH: f32 = 1.5;
+
+const GRID_COLOR: Color = Color::hsl(0.0, 0.0, 1.0);
+
 pub struct GridPlugin;
 
 impl Plugin for GridPlugin {
@@ -130,9 +134,9 @@ fn spawn_map(mut commands: Commands) {
         let x = position(COLUMNS as f32, column as f32);
         commands.spawn((
             Sprite::from_color(
-                Color::hsl(246., 1., 0.5),
+                GRID_COLOR,
                 Vec2 {
-                    x: 2.0,
+                    x: LINE_WIDTH,
                     y: total_size_x,
                 },
             ),
@@ -151,10 +155,10 @@ fn spawn_map(mut commands: Commands) {
         let y = position(ROWS as f32, row as f32);
         commands.spawn((
             Sprite::from_color(
-                Color::hsl(246., 1., 0.5),
+                GRID_COLOR,
                 Vec2 {
                     x: total_size_y,
-                    y: 2.0,
+                    y: LINE_WIDTH,
                 },
             ),
             Transform {

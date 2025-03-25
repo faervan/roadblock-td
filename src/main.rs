@@ -15,6 +15,8 @@ mod grid;
 mod path_finding;
 mod tower;
 
+const BACKGROUND_COLOR: Color = Color::hsl(150., 1., 0.4);
+
 fn main() {
     let mut app = App::new();
 
@@ -71,7 +73,7 @@ fn init(mut commands: Commands) {
     let map_anchor = Vec2::new(-map_size.x / 2., -map_size.y / 2.);
 
     commands.spawn((
-        Sprite::from_color(Color::hsl(91., 1., 0.5), map_size),
+        Sprite::from_color(BACKGROUND_COLOR, map_size),
         Transform::from_translation(Vec3::new(
             map_anchor.x + map_size.x / 2.,
             map_anchor.y + map_size.y / 2.,
