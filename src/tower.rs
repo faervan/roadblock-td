@@ -10,7 +10,7 @@ pub struct TowerPlugin;
 
 impl Plugin for TowerPlugin {
     fn build(&self, app: &mut App) {
-        app.insert_resource(SelectedTower { tower: Tower::Wall });
+        app.insert_resource(SelectedTower { tower: Tower::Wall, orientation: Orientation::Up });
         app.add_systems(Update, place_tower);
         app.register_type::<Tower>();
     }
@@ -26,6 +26,7 @@ enum Tower {
 }
 
 impl Tower {
+    //temp values as balancing cannot happen until a basic gameplay loop is in place
     fn max_hp(&self) -> u32 {
         match self {
             Self::Wall => 100,
@@ -36,8 +37,8 @@ impl Tower {
 
     fn size(&self) -> (isize, isize) {
         match self {
-            Self::Wall => (4, 2),
-            Self::SpikedWall => (4, 2),
+            Self::Wall => (4, 1),
+            Self::SpikedWall => (4, 1),
             Self::Canon => (3, 3),
         }
     }
@@ -89,6 +90,15 @@ fn tower_tile() -> Tile {
 #[reflect(Resource)]
 struct SelectedTower {
     tower: Tower,
+    orientation: Orientation
+}
+
+#[derive(Reflect)]
+enum Orientation {
+    Up,
+    Down,
+    Left,
+    Right,
 }
 
 fn place_tower(
@@ -111,8 +121,15 @@ fn place_tower(
         let world_pos = camera.viewport_to_world_2d(cam_transform, mouse_pos);
         if let Ok(world_pos) = world_pos {
             if let Some(grid_pos) = world_to_grid_coords(world_pos) {
-                for i in 0..tower.tower.size().0 {
-                    for j in 0..tower.tower.size().1 {
+                // Flip Dimensions of the tower in case of rotation
+                let tower_size = match tower.orientation {
+                    Orientation::Up | Orientation::Down => tower.tower.size(),
+                    Orientation::Left | Orientation::Right => (tower.tower.size().1, tower.tower.size().0)
+                };
+
+                // Check if tiles are free
+                for i in 0..tower_size.0 {
+                    for j in 0..tower_size.1 {
                         let pos = GridPos {
                             col: grid_pos.col + i,
                             row: grid_pos.row + j,
@@ -122,6 +139,7 @@ fn place_tower(
                         }
                     }
                 }
+
                 let entity = commands
                     .spawn((
                         Tower::Wall,
@@ -132,13 +150,12 @@ fn place_tower(
                         Sprite {
                             color: Color::srgb(0.0, 0.5, 1.0),
                             custom_size: Some(Vec2 {
-                                x: tower.tower.size().0 as f32 * TILE_SIZE,
-                                y: tower.tower.size().1 as f32 * TILE_SIZE,
+                                x: tower_size.0 as f32 * TILE_SIZE,
+                                y: tower_size.1 as f32 * TILE_SIZE,
                             }),
                             anchor: bevy::sprite::Anchor::BottomLeft,
                             ..default()
                         },
-                        //Sprite::from_color(Color::srgb(0.0, 0.5, 1.0), Vec2 {x: tower.tower.size().0 as f32 * TILE_SIZE, y: tower.tower.size().1 as f32 * TILE_SIZE}),
                         Transform {
                             translation: (grid_to_world_coords(grid_pos) - (TILE_SIZE * 0.5))
                                 .extend(1.0),
@@ -147,8 +164,9 @@ fn place_tower(
                     ))
                     .id();
 
-                for i in 0..tower.tower.size().0 {
-                    for j in 0..tower.tower.size().1 {
+                // Add entity to every coordinate it covers
+                for i in 0..tower_size.0 {
+                    for j in 0..tower_size.1 {
                         let pos = GridPos {
                             col: grid_pos.col + i,
                             row: grid_pos.row + j,
