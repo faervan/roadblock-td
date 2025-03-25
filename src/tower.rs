@@ -148,7 +148,8 @@ pub fn place_tower(
                             return;
                         }
 
-                        if pos.col > COLUMNS - 1 || pos.col < 0 || pos.row > ROWS - 1 || pos.row < 0 {
+                        if pos.col > COLUMNS - 1 || pos.col < 0 || pos.row > ROWS - 1 || pos.row < 0
+                        {
                             return;
                         }
                     }
