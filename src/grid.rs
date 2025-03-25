@@ -4,43 +4,56 @@ use bevy::prelude::*;
 use bevy::utils::HashMap;
 use bevy::{ecs::system::Resource, utils::HashSet};
 
-use crate::bordered_rectangle::BorderedRectangle;
-
-const ROWS: isize = 80;
-const COLUMNS: isize = 140;
-const TILE_SIZE: f32 = 10.;
+pub const ROWS: isize = 80;
+pub const COLUMNS: isize = 140;
+pub const TILE_SIZE: f32 = 15.;
 
 pub struct GridPlugin;
 
 impl Plugin for GridPlugin {
     fn build(&self, app: &mut App) {
         app.insert_resource(Grid {
-            grid: HashMap::new(),
+            tower: HashMap::new(),
+            enemy_spawn: HashMap::new(),
+            enemy_goal: HashMap::new(),
         });
+        app.register_type::<Grid>();
+        app.register_type::<Tile>();
         app.add_systems(Startup, spawn_map);
     }
 }
 
-#[derive(Resource)]
+#[derive(Reflect, Resource)]
+#[reflect(Resource)]
 pub struct Grid {
-    pub grid: HashMap<GridPos, (Entity, TileType)>,
+    pub tower: HashMap<GridPos, Entity>,
+    enemy_spawn: HashMap<GridPos, Entity>,
+    enemy_goal: HashMap<GridPos, Entity>,
 }
 
-#[derive(Component, Clone, Copy, Default)]
+impl Grid {
+    pub fn is_free(&self, position: &GridPos) -> bool {
+        !self.tower.contains_key(position)
+            && !self.enemy_spawn.contains_key(position)
+            && !self.enemy_goal.contains_key(position)
+    }
+}
+
+#[derive(Reflect, Component, Clone, Copy)]
+#[reflect(Component)]
 pub struct Tile {
     pub pos: GridPos,
     pub tile_type: TileType,
 }
 
-#[derive(Hash, PartialEq, Eq, Clone, Copy, Default)]
+#[derive(Reflect, Hash, PartialEq, Eq, Clone, Copy)]
 pub enum TileType {
-    #[default]
-    Empty,
     Tower,
-    Enemy,
+    EnemySpawn,
+    EnemyGoal,
 }
 
-#[derive(PartialEq, Eq, Hash, Clone, Copy, Default)]
+#[derive(Reflect, PartialEq, Eq, Hash, Clone, Copy, Default)]
 pub struct GridPos {
     row: isize,
     col: isize,
@@ -93,34 +106,53 @@ impl Debug for GridPos {
     }
 }
 
-fn spawn_map(
-    mut commands: Commands,
-    mut meshes: ResMut<Assets<Mesh>>,
-    mut materials: ResMut<Assets<ColorMaterial>>,
-    mut grid: ResMut<Grid>,
-) {
-    let position = |total: f32, current| -(total * 0.5 * TILE_SIZE) + current * TILE_SIZE;
+fn spawn_map(mut commands: Commands) {
+    let position =
+        |total: f32, current| (-(total * 0.5 * TILE_SIZE) + current * TILE_SIZE) - TILE_SIZE * 0.5;
 
-    for row in 0..ROWS {
+    let total_size_x = ROWS as f32 * TILE_SIZE;
+    let total_size_y = COLUMNS as f32 * TILE_SIZE;
+
+    for column in 0..=COLUMNS {
+        let x = position(COLUMNS as f32, column as f32);
+        commands.spawn((
+            Sprite::from_color(
+                Color::hsl(246., 1., 0.5),
+                Vec2 {
+                    x: 2.0,
+                    y: total_size_x,
+                },
+            ),
+            Transform {
+                translation: Vec3 {
+                    x,
+                    y: -TILE_SIZE * 0.5,
+                    z: 0.0,
+                },
+                ..default()
+            },
+        ));
+    }
+
+    for row in 0..=ROWS {
         let y = position(ROWS as f32, row as f32);
-        for col in 0..COLUMNS {
-            let x = position(COLUMNS as f32, col as f32);
-            let tile = Tile::new(row, col, TileType::Empty);
-            let entity = commands
-                .spawn((
-                    tile,
-                    Mesh2d(meshes.add(BorderedRectangle::new(Vec2::splat(TILE_SIZE), 1.))),
-                    MeshMaterial2d(materials.add(Color::hsl(246., 1., 0.5))),
-                    Transform {
-                        translation: Vec3::new(x, y, 0.),
-                        ..Default::default()
-                    },
-                ))
-                .id();
-
-            grid.grid
-                .insert(GridPos::new(row, col), (entity, TileType::Empty));
-        }
+        commands.spawn((
+            Sprite::from_color(
+                Color::hsl(246., 1., 0.5),
+                Vec2 {
+                    x: total_size_y,
+                    y: 2.0,
+                },
+            ),
+            Transform {
+                translation: Vec3 {
+                    x: -TILE_SIZE * 0.5,
+                    y,
+                    z: 0.0,
+                },
+                ..default()
+            },
+        ));
     }
 }
 
@@ -136,4 +168,11 @@ pub fn world_to_grid_coords(pos: Vec2) -> Option<GridPos> {
         row: ((pos.y + max_pos_y) / TILE_SIZE).round() as isize,
         col: ((pos.x + max_pos_x) / TILE_SIZE).round() as isize,
     })
+}
+
+pub fn grid_to_world_coords(pos: GridPos) -> Vec2 {
+    Vec2 {
+        x: -(COLUMNS as f32 * 0.5 * TILE_SIZE) + pos.col as f32 * TILE_SIZE,
+        y: -(ROWS as f32 * 0.5 * TILE_SIZE) + pos.row as f32 * TILE_SIZE,
+    }
 }

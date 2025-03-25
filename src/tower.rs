@@ -1,18 +1,29 @@
 use bevy::{prelude::*, window::PrimaryWindow};
 
-use crate::grid::{Grid, Tile, TileType, world_to_grid_coords};
+use crate::grid::{
+    Grid, GridPos, TILE_SIZE, Tile, TileType, grid_to_world_coords, world_to_grid_coords,
+};
 
 pub struct TowerPlugin;
 
 impl Plugin for TowerPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(Update, place_tower);
+        app.register_type::<Tower>();
     }
 }
 
-#[derive(Component)]
-#[require(Tile)]
+#[derive(Reflect, Component)]
+#[reflect(Component)]
+#[require(Tile(tower_tile))]
 struct Tower;
+
+fn tower_tile() -> Tile {
+    Tile {
+        pos: GridPos::default(),
+        tile_type: TileType::Tower,
+    }
+}
 
 fn place_tower(
     mut commands: Commands,
@@ -33,15 +44,18 @@ fn place_tower(
         let world_pos = camera.viewport_to_world_2d(cam_transform, mouse_pos);
         if let Ok(world_pos) = world_pos {
             if let Some(grid_pos) = world_to_grid_coords(world_pos) {
-                if let Some(cur_entity) = grid.grid.get(&grid_pos) {
-                    match cur_entity.1 {
-                        TileType::Empty => {
-                            // Currently only deletes the current tile, need to implement spawning new tower still
-                            commands.entity(cur_entity.0).despawn();
-                            grid.grid.remove(&grid_pos);
-                        }
-                        _ => todo!(),
-                    }
+                if grid.is_free(&grid_pos) {
+                    let entity = commands
+                        .spawn((
+                            Tower,
+                            Sprite::from_color(Color::srgb(0.0, 0.5, 1.0), Vec2::splat(TILE_SIZE)),
+                            Transform {
+                                translation: grid_to_world_coords(grid_pos).extend(1.0),
+                                ..default()
+                            },
+                        ))
+                        .id();
+                    grid.tower.insert(grid_pos, entity);
                 }
             }
         } else {
