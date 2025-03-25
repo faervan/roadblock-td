@@ -15,29 +15,33 @@ impl Plugin for GridPlugin {
         app.insert_resource(Grid {
             grid: HashMap::new(),
         });
+        app.register_type::<Grid>();
+        app.register_type::<Tile>();
         app.add_systems(Startup, spawn_map);
     }
 }
 
-#[derive(Resource)]
+#[derive(Reflect, Resource)]
+#[reflect(Resource)]
 pub struct Grid {
     pub grid: HashMap<GridPos, (Entity, TileType)>,
 }
 
-#[derive(Component, Clone, Copy)]
+#[derive(Reflect, Component, Clone, Copy)]
+#[reflect(Component)]
 pub struct Tile {
     pub pos: GridPos,
     pub tile_type: TileType,
 }
 
-#[derive(Hash, PartialEq, Eq, Clone, Copy)]
+#[derive(Reflect, Hash, PartialEq, Eq, Clone, Copy)]
 pub enum TileType {
     Tower,
     EnemySpawn,
-    EnemyGoal
+    EnemyGoal,
 }
 
-#[derive(PartialEq, Eq, Hash, Clone, Copy, Default)]
+#[derive(Reflect, PartialEq, Eq, Hash, Clone, Copy, Default)]
 pub struct GridPos {
     row: isize,
     col: isize,
@@ -90,10 +94,9 @@ impl Debug for GridPos {
     }
 }
 
-fn spawn_map(
-    mut commands: Commands,
-) {
-    let position = |total: f32, current| (-(total * 0.5 * TILE_SIZE) + current * TILE_SIZE) - TILE_SIZE * 0.5;
+fn spawn_map(mut commands: Commands) {
+    let position =
+        |total: f32, current| (-(total * 0.5 * TILE_SIZE) + current * TILE_SIZE) - TILE_SIZE * 0.5;
 
     let total_size_x = ROWS as f32 * TILE_SIZE;
     let total_size_y = COLUMNS as f32 * TILE_SIZE;
@@ -101,22 +104,42 @@ fn spawn_map(
     for column in 0..=COLUMNS {
         let x = position(COLUMNS as f32, column as f32);
         commands.spawn((
-            Sprite::from_color(Color::hsl(246., 1., 0.5), Vec2 { x: 2.0, y: total_size_x }),
+            Sprite::from_color(
+                Color::hsl(246., 1., 0.5),
+                Vec2 {
+                    x: 2.0,
+                    y: total_size_x,
+                },
+            ),
             Transform {
-                translation: Vec3 { x, y: -TILE_SIZE * 0.5, z: 0.0 },
+                translation: Vec3 {
+                    x,
+                    y: -TILE_SIZE * 0.5,
+                    z: 0.0,
+                },
                 ..default()
-            }
+            },
         ));
     }
 
     for row in 0..=ROWS {
         let y = position(ROWS as f32, row as f32);
         commands.spawn((
-            Sprite::from_color(Color::hsl(246., 1., 0.5), Vec2 { x: total_size_y, y: 2.0 }),
+            Sprite::from_color(
+                Color::hsl(246., 1., 0.5),
+                Vec2 {
+                    x: total_size_y,
+                    y: 2.0,
+                },
+            ),
             Transform {
-                translation: Vec3 { x: -TILE_SIZE * 0.5, y, z: 0.0 },
+                translation: Vec3 {
+                    x: -TILE_SIZE * 0.5,
+                    y,
+                    z: 0.0,
+                },
                 ..default()
-            }
+            },
         ));
     }
 }
@@ -138,6 +161,6 @@ pub fn world_to_grid_coords(pos: Vec2) -> Option<GridPos> {
 pub fn grid_to_world_coords(pos: GridPos) -> Vec2 {
     Vec2 {
         x: -(COLUMNS as f32 * 0.5 * TILE_SIZE) + pos.col as f32 * TILE_SIZE,
-        y: -(ROWS as f32 * 0.5 * TILE_SIZE) + pos.row as f32 * TILE_SIZE
+        y: -(ROWS as f32 * 0.5 * TILE_SIZE) + pos.row as f32 * TILE_SIZE,
     }
 }

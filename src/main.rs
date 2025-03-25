@@ -47,13 +47,16 @@ fn main() {
     if std::env::args().any(|a| a == "--egui") {
         app.add_plugins(WorldInspectorPlugin::new());
     }
+    app.register_type::<MapInfo>();
+
     app.add_plugins((PathfindingPlugin, GridPlugin, TowerPlugin));
     app.add_systems(Startup, init);
     app.add_systems(Update, (pan_camera, exit_on_ctrl_q));
     app.run();
 }
 
-#[derive(Resource, Debug)]
+#[derive(Reflect, Resource, Debug)]
+#[reflect(Resource)]
 struct MapInfo {
     size: Vec2,
     /// Bottom left anchor of the map in bevy's coordinate system
