@@ -3,7 +3,10 @@ use std::time::Duration;
 use bevy::{prelude::*, window::PrimaryWindow};
 
 use crate::{
-    grid::{Grid, GridPos, TILE_SIZE, Tile, TileType, grid_to_world_coords, world_to_grid_coords},
+    grid::{
+        COLUMNS, Grid, GridPos, ROWS, TILE_SIZE, Tile, TileType, grid_to_world_coords,
+        world_to_grid_coords,
+    },
     path_finding::PathChangedEvent,
 };
 
@@ -142,6 +145,10 @@ pub fn place_tower(
                             row: grid_pos.row + j,
                         };
                         if !grid.is_free(&pos) {
+                            return;
+                        }
+
+                        if pos.col > COLUMNS - 1 || pos.col < 0 || pos.row > ROWS - 1 || pos.row < 0 {
                             return;
                         }
                     }
