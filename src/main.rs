@@ -43,24 +43,11 @@ struct EnemyPath(Vec<Tile>);
 
 fn init(
     mut commands: Commands,
-    winit_windows: NonSend<WinitWindows>,
-    window: Single<Entity, With<PrimaryWindow>>,
 ) {
     commands.spawn(Camera2d);
 
-    let window_size = winit_windows
-        .get_window(*window)
-        .and_then(|w| w.current_monitor())
-        .map_or_else(
-            || Vec2::new(1920., 1080.),
-            |m| {
-                let size = m.size();
-                Vec2::new(size.width as f32, size.height as f32)
-            },
-        );
-
     let map_size = Vec2::new(3000., 2000.);
-    let map_anchor = Vec2::new(-window_size.x / 2., -window_size.y / 2.);
+    let map_anchor = Vec2::new(-map_size.x / 2., -map_size.y / 2.);
 
     commands.spawn((
         Sprite::from_color(Color::hsl(91., 1., 0.5), map_size),
