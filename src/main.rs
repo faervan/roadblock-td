@@ -1,28 +1,51 @@
 use bevy::{
-    input::mouse::AccumulatedMouseMotion, prelude::*, window::PrimaryWindow, winit::WinitWindows,
+    input::mouse::AccumulatedMouseMotion,
+    log::{Level, LogPlugin},
+    prelude::*,
+    window::PrimaryWindow,
 };
-use bordered_rectangle::BorderedRectangle;
-use path_finding::enemy_get_path;
-use tile::Tile;
+use grid::{GridPlugin, GridPos, Tile};
+use path_finding::PathfindingPlugin;
+use tower::TowerPlugin;
 
 mod bordered_rectangle;
+mod grid;
 mod path_finding;
-mod tile;
-
-const TILE_SIZE: f32 = 10.;
+mod tower;
 
 fn main() {
-    App::new()
-        .add_plugins(DefaultPlugins.set(WindowPlugin {
-            primary_window: Some(Window {
-                mode: bevy::window::WindowMode::BorderlessFullscreen(MonitorSelection::Current),
-                ..Default::default()
+    let mut app = App::new();
+
+    // only show debug logs on a debug build
+    #[cfg(debug_assertions)]
+    app.add_plugins(
+        DefaultPlugins
+            .set(WindowPlugin {
+                primary_window: Some(Window {
+                    mode: bevy::window::WindowMode::BorderlessFullscreen(MonitorSelection::Current),
+                    ..default()
+                }),
+                ..default()
+            })
+            .set(LogPlugin {
+                level: Level::DEBUG,
+                ..default()
             }),
-            ..Default::default()
-        }))
-        .add_systems(Startup, (init, spawn_map))
-        .add_systems(Update, (enemy_get_path, pan_camera, exit_on_ctrl_q))
-        .run();
+    );
+
+    #[cfg(not(debug_assertions))]
+    app.add_plugins(DefaultPlugins.set(WindowPlugin {
+        primary_window: Some(Window {
+            mode: bevy::window::WindowMode::BorderlessFullscreen(MonitorSelection::Current),
+            ..default()
+        }),
+        ..default()
+    }));
+
+    app.add_plugins((PathfindingPlugin, GridPlugin, TowerPlugin));
+    app.add_systems(Startup, init);
+    app.add_systems(Update, (pan_camera, exit_on_ctrl_q));
+    app.run();
 }
 
 #[derive(Resource, Debug)]
@@ -33,17 +56,15 @@ struct MapInfo {
 }
 
 #[derive(Component)]
+#[require(Tile)]
 struct Enemy {
-    current: Tile,
-    goal: Tile,
+    goal: GridPos,
 }
 
 #[derive(Component)]
-struct EnemyPath(Vec<Tile>);
+struct EnemyPath(Vec<GridPos>);
 
-fn init(
-    mut commands: Commands,
-) {
+fn init(mut commands: Commands) {
     commands.spawn(Camera2d);
 
     let map_size = Vec2::new(3000., 2000.);
@@ -61,34 +82,6 @@ fn init(
         size: map_size,
         anchor: map_anchor,
     });
-}
-
-fn spawn_map(
-    mut commands: Commands,
-    mut meshes: ResMut<Assets<Mesh>>,
-    mut materials: ResMut<Assets<ColorMaterial>>,
-) {
-    let rows = 80;
-    let columns = 140;
-
-    let position = |total: f32, current| -(total * 0.5 * TILE_SIZE) + current * TILE_SIZE;
-
-    for row in 0..rows {
-        let y = position(rows as f32, row as f32);
-        for col in 0..columns {
-            let x = position(columns as f32, col as f32);
-            let tile = Tile::new(row, col);
-            commands.spawn((
-                tile,
-                Mesh2d(meshes.add(BorderedRectangle::new(Vec2::splat(TILE_SIZE), 1.))),
-                MeshMaterial2d(materials.add(Color::hsl(246., 1., 0.5))),
-                Transform {
-                    translation: Vec3::new(x, y, 0.),
-                    ..Default::default()
-                },
-            ));
-        }
-    }
 }
 
 fn pan_camera(
