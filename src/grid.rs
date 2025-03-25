@@ -177,7 +177,7 @@ pub fn world_to_grid_coords(pos: Vec2) -> Option<GridPos> {
     let max_pos_x = TILE_SIZE * COLUMNS as f32 * 0.5;
     let max_pos_y = TILE_SIZE * ROWS as f32 * 0.5;
 
-    if pos.x.abs() > max_pos_x || pos.y.abs() > max_pos_y {
+    if (pos.x + TILE_SIZE * 0.5).abs() > max_pos_x || (pos.y + TILE_SIZE * 0.5).abs() > max_pos_y {
         return None;
     }
 
