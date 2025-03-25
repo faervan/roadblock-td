@@ -2,15 +2,19 @@ use std::time::Duration;
 
 use bevy::{prelude::*, window::PrimaryWindow};
 
-use crate::grid::{
-    Grid, GridPos, TILE_SIZE, Tile, TileType, grid_to_world_coords, world_to_grid_coords,
+use crate::{
+    grid::{Grid, GridPos, TILE_SIZE, Tile, TileType, grid_to_world_coords, world_to_grid_coords},
+    path_finding::PathChangedEvent,
 };
 
 pub struct TowerPlugin;
 
 impl Plugin for TowerPlugin {
     fn build(&self, app: &mut App) {
-        app.insert_resource(SelectedTower { tower: Tower::Wall, orientation: Orientation::Up });
+        app.insert_resource(SelectedTower {
+            tower: Tower::Wall,
+            orientation: Orientation::Up,
+        });
         app.add_systems(Update, place_tower);
         app.register_type::<Tower>();
     }
@@ -88,9 +92,9 @@ fn tower_tile() -> Tile {
 
 #[derive(Reflect, Resource)]
 #[reflect(Resource)]
-struct SelectedTower {
+pub struct SelectedTower {
     tower: Tower,
-    orientation: Orientation
+    orientation: Orientation,
 }
 
 #[derive(Reflect)]
@@ -101,8 +105,9 @@ enum Orientation {
     Right,
 }
 
-fn place_tower(
+pub fn place_tower(
     mut commands: Commands,
+    mut event_writer: EventWriter<PathChangedEvent>,
     window: Single<&Window, With<PrimaryWindow>>,
     cam: Single<(&Camera, &GlobalTransform)>,
     mouse_input: Res<ButtonInput<MouseButton>>,
@@ -124,7 +129,9 @@ fn place_tower(
                 // Flip Dimensions of the tower in case of rotation
                 let tower_size = match tower.orientation {
                     Orientation::Up | Orientation::Down => tower.tower.size(),
-                    Orientation::Left | Orientation::Right => (tower.tower.size().1, tower.tower.size().0)
+                    Orientation::Left | Orientation::Right => {
+                        (tower.tower.size().1, tower.tower.size().0)
+                    }
                 };
 
                 // Check if tiles are free
@@ -164,6 +171,7 @@ fn place_tower(
                     ))
                     .id();
 
+                let mut blocked = vec![];
                 // Add entity to every coordinate it covers
                 for i in 0..tower_size.0 {
                     for j in 0..tower_size.1 {
@@ -171,9 +179,11 @@ fn place_tower(
                             col: grid_pos.col + i,
                             row: grid_pos.row + j,
                         };
+                        blocked.push(pos);
                         grid.tower.insert(pos, entity);
                     }
                 }
+                event_writer.send(PathChangedEvent::now_blocked(blocked));
             }
         } else {
             warn!("Unable to get Cursor Position {:?}", world_pos.unwrap_err())

@@ -6,13 +6,44 @@ use bevy::{
 use crate::{
     enemy::{Enemy, EnemyPath},
     grid::{Grid, GridPos},
+    tower::place_tower,
 };
 
 pub struct PathfindingPlugin;
 
 impl Plugin for PathfindingPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Update, enemy_get_path);
+        app.add_event::<PathChangedEvent>().add_systems(
+            Update,
+            (
+                check_for_broken_paths
+                    .run_if(on_event::<PathChangedEvent>)
+                    .after(place_tower),
+                enemy_get_path.after(check_for_broken_paths),
+            ),
+        );
+    }
+}
+
+#[derive(Event)]
+pub struct PathChangedEvent {
+    changed: Vec<GridPos>,
+    /// If true, the positions from self.changed are now empty. Else they are now blocked.
+    now_free: bool,
+}
+
+impl PathChangedEvent {
+    pub fn now_free(freed: Vec<GridPos>) -> Self {
+        Self {
+            changed: freed,
+            now_free: true,
+        }
+    }
+    pub fn now_blocked(blocked: Vec<GridPos>) -> Self {
+        Self {
+            changed: blocked,
+            now_free: false,
+        }
     }
 }
 
@@ -60,7 +91,7 @@ fn try_get_target(tiles: &HashSet<GridPos>, enemy: &Enemy) -> Option<HashMap<Gri
     None
 }
 
-pub fn enemy_get_path(
+fn enemy_get_path(
     mut commands: Commands,
     enemies: Query<(&Enemy, Entity), Without<EnemyPath>>,
     grid: Res<Grid>,
@@ -84,6 +115,43 @@ pub fn enemy_get_path(
         } else {
             info!("No path was found! Despawning!");
             commands.entity(entity).despawn();
+        }
+    }
+}
+
+fn check_for_broken_paths(
+    mut events: EventReader<PathChangedEvent>,
+    mut commands: Commands,
+    enemies: Query<(&EnemyPath, Entity), With<Enemy>>,
+) {
+    let mut freed_tiles: Vec<&GridPos> = vec![];
+    let mut blocked_tiles: Vec<&GridPos> = vec![];
+    for event in events.read() {
+        match event.now_free {
+            true => freed_tiles.extend(&event.changed),
+            false => blocked_tiles.extend(&event.changed),
+        }
+    }
+    // If a new path is available, every Enemy should check if it's more optimal for them
+    if !freed_tiles.is_empty() {
+        for (_, entity) in &enemies {
+            commands.entity(entity).remove::<EnemyPath>();
+        }
+        return;
+    }
+    'outer: for (path, entity) in &enemies {
+        if path
+            .steps
+            .last()
+            .is_some_and(|tile| blocked_tiles.contains(&tile))
+        {
+            continue;
+        }
+        for tile in &blocked_tiles {
+            if path.steps.contains(tile) {
+                commands.entity(entity).remove::<EnemyPath>();
+                continue 'outer;
+            }
         }
     }
 }

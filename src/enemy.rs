@@ -26,7 +26,7 @@ pub struct Enemy {
 #[derive(Reflect, Component)]
 #[reflect(Component)]
 pub struct EnemyPath {
-    steps: Vec<GridPos>,
+    pub steps: Vec<GridPos>,
     next: Option<Vec3>,
 }
 
