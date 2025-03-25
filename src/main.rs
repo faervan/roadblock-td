@@ -9,7 +9,6 @@ use grid::GridPlugin;
 use path_finding::PathfindingPlugin;
 use tower::TowerPlugin;
 
-mod bordered_rectangle;
 mod enemy;
 mod grid;
 mod path_finding;
@@ -24,6 +23,7 @@ fn main() {
         DefaultPlugins
             .set(WindowPlugin {
                 primary_window: Some(Window {
+                    present_mode: bevy::window::PresentMode::AutoNoVsync,
                     mode: bevy::window::WindowMode::BorderlessFullscreen(MonitorSelection::Current),
                     ..default()
                 }),
