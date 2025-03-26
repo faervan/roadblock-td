@@ -18,7 +18,7 @@ impl Plugin for TowerPlugin {
             tower: Tower::Wall,
             orientation: Orientation::Up,
         });
-        app.add_systems(Update, place_tower);
+        app.add_systems(Update, (place_tower, change_rotation));
         app.register_type::<Tower>();
     }
 }
@@ -196,5 +196,16 @@ pub fn place_tower(
         } else {
             warn!("Unable to get Cursor Position {:?}", world_pos.unwrap_err())
         }
+    }
+}
+
+fn change_rotation(input: Res<ButtonInput<KeyCode>>, mut selection: ResMut<SelectedTower>) {
+    if input.just_pressed(KeyCode::KeyR) {
+        selection.orientation = match selection.orientation {
+            Orientation::Up => Orientation::Right,
+            Orientation::Right => Orientation::Down,
+            Orientation::Down => Orientation::Left,
+            Orientation::Left => Orientation::Up,
+        };
     }
 }
