@@ -272,7 +272,7 @@ fn update_preview(
                 });
 
                 transform.translation =
-                    (grid_to_world_coords(grid_pos) - (TILE_SIZE * 0.5)).extend(1.0);
+                    (grid_to_world_coords(grid_pos) - (TILE_SIZE * 0.5)).extend(2.0);
 
                 *visibility = Visibility::Inherited;
             } else {
