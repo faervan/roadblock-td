@@ -1,0 +1,4 @@
+# Art attributions
+
+*enemies/BODY_skeleton.png*:
+https://opengameart.org/content/lpc-medieval-fantasy-character-sprites

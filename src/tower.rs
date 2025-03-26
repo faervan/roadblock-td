@@ -3,6 +3,7 @@ use std::time::Duration;
 use bevy::{prelude::*, window::PrimaryWindow};
 
 use crate::{
+    Orientation,
     grid::{
         COLUMNS, Grid, GridPos, ROWS, TILE_SIZE, Tile, TileType, grid_to_world_coords,
         world_to_grid_coords,
@@ -98,14 +99,6 @@ fn tower_tile() -> Tile {
 pub struct SelectedTower {
     tower: Tower,
     orientation: Orientation,
-}
-
-#[derive(Reflect)]
-enum Orientation {
-    Up,
-    Down,
-    Left,
-    Right,
 }
 
 pub fn place_tower(

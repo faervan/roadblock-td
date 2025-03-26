@@ -10,6 +10,7 @@ use grid::GridPlugin;
 use path_finding::PathfindingPlugin;
 use tower::TowerPlugin;
 
+mod animation;
 mod enemy;
 mod grid;
 mod path_finding;
@@ -52,7 +53,13 @@ fn main() {
     }
     app.register_type::<MapInfo>();
 
-    app.add_plugins((PathfindingPlugin, GridPlugin, TowerPlugin, EnemyPlugin));
+    app.add_plugins((
+        animation::AnimationPlugin,
+        PathfindingPlugin,
+        GridPlugin,
+        TowerPlugin,
+        EnemyPlugin,
+    ));
     app.add_systems(Startup, init);
     app.add_systems(Update, (pan_camera, exit_on_ctrl_q));
     app.run();
@@ -64,6 +71,15 @@ struct MapInfo {
     size: Vec2,
     /// Bottom left anchor of the map in bevy's coordinate system
     anchor: Vec2,
+}
+
+#[derive(Reflect, Default, PartialEq, Debug)]
+enum Orientation {
+    #[default]
+    Up,
+    Down,
+    Left,
+    Right,
 }
 
 fn init(mut commands: Commands) {

@@ -1,8 +1,12 @@
 use bevy::{prelude::*, window::PrimaryWindow};
 
-use crate::grid::{
-    COLUMNS, Grid, GridPos, ROWS, TILE_SIZE, Tile, TileType, grid_to_world_coords,
-    world_to_grid_coords,
+use crate::{
+    Orientation,
+    animation::AnimationConfig,
+    grid::{
+        COLUMNS, Grid, GridPos, ROWS, TILE_SIZE, Tile, TileType, grid_to_world_coords,
+        world_to_grid_coords,
+    },
 };
 
 pub struct EnemyPlugin;
@@ -21,6 +25,78 @@ impl Plugin for EnemyPlugin {
 pub struct Enemy {
     pub current: GridPos,
     pub goal: GridPos,
+    variant: EnemyType,
+    orientation: Orientation,
+}
+
+#[derive(Reflect)]
+enum EnemyType {
+    Skeleton,
+}
+
+impl Enemy {
+    fn new(current: GridPos, goal: GridPos, variant: EnemyType) -> Self {
+        Self {
+            current,
+            goal,
+            variant,
+            orientation: Orientation::default(),
+        }
+    }
+
+    fn sprite_sheet(&self) -> &str {
+        match self.variant {
+            EnemyType::Skeleton => "sprites/enemies/BODY_skeleton.png",
+        }
+    }
+
+    fn layout(&self, layouts: &mut Assets<TextureAtlasLayout>) -> TextureAtlas {
+        match self.variant {
+            EnemyType::Skeleton => TextureAtlas {
+                layout: layouts.add(TextureAtlasLayout::from_grid(
+                    UVec2::splat(64),
+                    9,
+                    4,
+                    None,
+                    None,
+                )),
+                index: self.sprite_indices().0,
+            },
+        }
+    }
+
+    fn offset(&self) -> Vec3 {
+        match self.variant {
+            EnemyType::Skeleton => Vec3::new(0., 10., 0.),
+        }
+    }
+
+    fn scale(&self) -> Vec3 {
+        match self.variant {
+            EnemyType::Skeleton => Vec3::splat(0.6),
+        }
+    }
+
+    fn animation_config(&self) -> AnimationConfig {
+        match self.variant {
+            EnemyType::Skeleton => {
+                let (first, last) = self.sprite_indices();
+                AnimationConfig::new(first, last, 10)
+            }
+        }
+    }
+
+    /// Returns (first_sprite_index, last_sprite_index)
+    fn sprite_indices(&self) -> (usize, usize) {
+        match self.variant {
+            EnemyType::Skeleton => match self.orientation {
+                Orientation::Up => (0, 8),
+                Orientation::Down => (18, 26),
+                Orientation::Left => (9, 17),
+                Orientation::Right => (27, 35),
+            },
+        }
+    }
 }
 
 #[derive(Reflect, Component)]
@@ -69,8 +145,8 @@ fn spawn_enemies(
     cam: Single<(&Camera, &GlobalTransform)>,
     mouse_input: Res<ButtonInput<MouseButton>>,
     grid: Res<Grid>,
-    mut meshes: ResMut<Assets<Mesh>>,
-    mut materials: ResMut<Assets<ColorMaterial>>,
+    asset_server: Res<AssetServer>,
+    mut texture_atlas_layouts: ResMut<Assets<TextureAtlasLayout>>,
 ) {
     if !mouse_input.just_pressed(MouseButton::Right) {
         return;
@@ -85,17 +161,25 @@ fn spawn_enemies(
         if let Ok(world_pos) = world_pos {
             if let Some(grid_pos) = world_to_grid_coords(world_pos) {
                 if grid.is_free(&grid_pos) {
+                    let enemy = Enemy::new(
+                        grid_pos,
+                        *grid.enemy_goal.iter().next().unwrap().0,
+                        EnemyType::Skeleton,
+                    );
                     commands.spawn((
-                        Enemy {
-                            current: grid_pos,
-                            goal: *grid.enemy_goal.iter().next().unwrap().0,
+                        Sprite {
+                            image: asset_server.load(enemy.sprite_sheet()),
+                            texture_atlas: Some(enemy.layout(&mut texture_atlas_layouts)),
+                            ..Default::default()
                         },
-                        Mesh2d(meshes.add(Circle::new(5.))),
-                        MeshMaterial2d(materials.add(Color::hsl(0., 1., 0.5))),
                         Transform {
-                            translation: grid_to_world_coords(grid_pos).extend(1.0),
+                            translation: grid_to_world_coords(grid_pos).extend(1.0)
+                                + enemy.offset(),
+                            scale: enemy.scale(),
                             ..default()
                         },
+                        enemy.animation_config(),
+                        enemy,
                     ));
                 }
             }
@@ -106,17 +190,40 @@ fn spawn_enemies(
 }
 
 fn move_enemies(
-    mut query: Query<(&mut EnemyPath, &mut Enemy, &mut Transform, Entity)>,
+    mut query: Query<(
+        &mut EnemyPath,
+        &mut Enemy,
+        &mut AnimationConfig,
+        &mut Sprite,
+        &mut Transform,
+        Entity,
+    )>,
     time: Res<Time>,
     mut commands: Commands,
 ) {
-    for (mut path, mut enemy, mut pos, entity) in &mut query {
+    for (mut path, mut enemy, mut animation, mut sprite, mut pos, entity) in &mut query {
         let next = match path.next {
             Some(tile) => tile,
             None => {
                 if let Some(tile) = path.steps.pop() {
+                    let orientation =
+                        match (tile.row > enemy.current.row, tile.col > enemy.current.col) {
+                            (true, false) => Orientation::Up,
+                            (false, true) => Orientation::Right,
+                            _ => match tile.row < enemy.current.row {
+                                true => Orientation::Down,
+                                false => Orientation::Left,
+                            },
+                        };
+                    if orientation != enemy.orientation {
+                        enemy.orientation = orientation;
+                        *animation = enemy.animation_config();
+                        if let Some(atlas) = &mut sprite.texture_atlas {
+                            atlas.index = enemy.sprite_indices().0;
+                        }
+                    }
                     enemy.current = tile;
-                    let next = grid_to_world_coords(tile).extend(1.);
+                    let next = grid_to_world_coords(tile).extend(1.) + enemy.offset();
                     path.next = Some(next);
                     next
                 } else {

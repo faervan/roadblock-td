@@ -47,7 +47,7 @@ impl PathChangedEvent {
     }
 }
 
-fn try_get_target(tiles: &HashSet<GridPos>, enemy: &Enemy) -> Option<HashMap<GridPos, GridPos>> {
+fn try_get_target(tiles: &HashSet<&GridPos>, enemy: &Enemy) -> Option<HashMap<GridPos, GridPos>> {
     let distance = enemy.current.distance_to(&enemy.goal);
     // This is the A* algorithm, see https://www.youtube.com/watch?v=-L-WgKMFuhE
 
@@ -106,7 +106,7 @@ fn enemy_get_path(
         path
     };
     for (enemy, entity) in &enemies {
-        if let Some(closed) = try_get_target(&grid.empty_tiles(), enemy) {
+        if let Some(closed) = try_get_target(&grid.blocked_tiles(), enemy) {
             let path = get_path(closed, enemy);
             if !path.is_empty() {
                 commands.entity(entity).insert(EnemyPath::new(path));

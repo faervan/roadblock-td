@@ -4,9 +4,9 @@ use bevy::prelude::*;
 use bevy::utils::HashMap;
 use bevy::{ecs::system::Resource, utils::HashSet};
 
-pub const ROWS: isize = 80;
-pub const COLUMNS: isize = 140;
-pub const TILE_SIZE: f32 = 15.;
+pub const ROWS: isize = 40;
+pub const COLUMNS: isize = 70;
+pub const TILE_SIZE: f32 = 25.;
 
 const LINE_WIDTH: f32 = 1.5;
 
@@ -42,17 +42,9 @@ impl Grid {
             && !self.enemy_goal.contains_key(position)
     }
 
-    pub fn empty_tiles(&self) -> HashSet<GridPos> {
-        let mut empty = HashSet::new();
-        for row in 0..ROWS {
-            for col in 0..COLUMNS {
-                let position = GridPos::new(row, col);
-                if !self.tower.contains_key(&position) {
-                    empty.insert(position);
-                }
-            }
-        }
-        empty
+    /// All tiles not to be included in the enemys pathfinding
+    pub fn blocked_tiles(&self) -> HashSet<&GridPos> {
+        self.tower.iter().map(|(pos, _)| pos).collect()
     }
 }
 
@@ -94,12 +86,12 @@ impl GridPos {
         other.row.abs_diff(self.row) + other.col.abs_diff(self.col)
     }
 
-    pub fn neighbors(&self, tiles: &HashSet<GridPos>) -> Vec<GridPos> {
+    pub fn neighbors(&self, blocked: &HashSet<&GridPos>) -> Vec<GridPos> {
         let mut neighbors = vec![];
 
         let mut push_maybe = |row, col| {
             let tile = GridPos::new(row, col);
-            tiles.contains(&tile).then(|| neighbors.push(tile));
+            (!blocked.contains(&tile)).then(|| neighbors.push(tile));
         };
 
         push_maybe(self.row + 1, self.col);
