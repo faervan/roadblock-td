@@ -88,29 +88,46 @@ fn init(mut commands: Commands) {
 
 fn pan_camera(
     mut camera: Single<&mut Transform, With<Camera>>,
+    input: Res<ButtonInput<KeyCode>>,
     mouse_input: Res<ButtonInput<MouseButton>>,
     motion: Res<AccumulatedMouseMotion>,
     map_info: Res<MapInfo>,
     window: Single<&Window, With<PrimaryWindow>>,
+    time: Res<Time>,
 ) {
-    if mouse_input.pressed(MouseButton::Middle) && motion.delta != Vec2::ZERO {
+    let [w_pressed, a_pressed, s_pressed, d_pressed] = [
+        input.pressed(KeyCode::KeyW),
+        input.pressed(KeyCode::KeyA),
+        input.pressed(KeyCode::KeyS),
+        input.pressed(KeyCode::KeyD),
+    ];
+    if w_pressed || a_pressed || s_pressed || d_pressed {
+        let mut direction = Vec3::ZERO;
+        w_pressed.then(|| direction.y += 1.);
+        a_pressed.then(|| direction.x -= 1.);
+        s_pressed.then(|| direction.y -= 1.);
+        d_pressed.then(|| direction.x += 1.);
+        camera.translation += direction.normalize() * time.delta_secs() * 500.;
+    } else if mouse_input.pressed(MouseButton::Middle) && motion.delta != Vec2::ZERO {
         camera.translation.x -= motion.delta.x;
         camera.translation.y += motion.delta.y;
+    } else {
+        return;
+    }
 
-        let window_size = window.size() / 2.;
+    let window_size = window.size() / 2.;
 
-        // Prevent panning to infinity
-        if camera.translation.x < map_info.anchor.x + window_size.x {
-            camera.translation.x = map_info.anchor.x + window_size.x;
-        } else if camera.translation.x > map_info.anchor.x + map_info.size.x - window_size.x {
-            camera.translation.x = map_info.anchor.x + map_info.size.x - window_size.x;
-        }
+    // Prevent panning to infinity
+    if camera.translation.x < map_info.anchor.x + window_size.x {
+        camera.translation.x = map_info.anchor.x + window_size.x;
+    } else if camera.translation.x > map_info.anchor.x + map_info.size.x - window_size.x {
+        camera.translation.x = map_info.anchor.x + map_info.size.x - window_size.x;
+    }
 
-        if camera.translation.y < map_info.anchor.y + window_size.y {
-            camera.translation.y = map_info.anchor.y + window_size.y;
-        } else if camera.translation.y > map_info.anchor.y + map_info.size.y - window_size.y {
-            camera.translation.y = map_info.anchor.y + map_info.size.y - window_size.y;
-        }
+    if camera.translation.y < map_info.anchor.y + window_size.y {
+        camera.translation.y = map_info.anchor.y + window_size.y;
+    } else if camera.translation.y > map_info.anchor.y + map_info.size.y - window_size.y {
+        camera.translation.y = map_info.anchor.y + map_info.size.y - window_size.y;
     }
 }
 
