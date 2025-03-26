@@ -19,8 +19,10 @@ impl Plugin for TowerPlugin {
             tower: Tower::Wall,
             orientation: Orientation::Up,
         });
-        app.add_systems(Update, (place_tower, change_rotation));
+        app.add_systems(Startup, spawn_preview);
+        app.add_systems(Update, (place_tower, change_rotation, update_preview));
         app.register_type::<Tower>();
+        app.register_type::<TowerPreview>();
     }
 }
 
@@ -100,6 +102,10 @@ pub struct SelectedTower {
     tower: Tower,
     orientation: Orientation,
 }
+
+#[derive(Reflect, Component)]
+#[reflect(Component)]
+struct TowerPreview;
 
 pub fn place_tower(
     mut commands: Commands,
@@ -200,5 +206,80 @@ fn change_rotation(input: Res<ButtonInput<KeyCode>>, mut selection: ResMut<Selec
             Orientation::Down => Orientation::Left,
             Orientation::Left => Orientation::Up,
         };
+    }
+}
+
+fn spawn_preview(mut commands: Commands) {
+    commands.spawn((
+        TowerPreview,
+        Sprite {
+            color: Color::srgb(0.0, 0.5, 1.0),
+            anchor: bevy::sprite::Anchor::BottomLeft,
+            ..default()
+        },
+        Visibility::Hidden,
+    ));
+}
+
+fn update_preview(
+    window: Single<&Window, With<PrimaryWindow>>,
+    cam: Single<(&Camera, &GlobalTransform)>,
+    grid: ResMut<Grid>,
+    selection: Res<SelectedTower>,
+    mut preview: Query<(&mut Sprite, &mut Transform, &mut Visibility), With<TowerPreview>>,
+) {
+    let (mut sprite, mut transform, mut visibility) = preview.single_mut();
+
+    let mouse_pos = window.cursor_position();
+
+    if let Some(mouse_pos) = mouse_pos {
+        let (camera, cam_transform) = *cam;
+
+        let world_pos = camera.viewport_to_world_2d(cam_transform, mouse_pos);
+        if let Ok(world_pos) = world_pos {
+            if let Some(grid_pos) = world_to_grid_coords(world_pos) {
+                // Flip Dimensions of the tower in case of rotation
+                let tower_size = match selection.orientation {
+                    Orientation::Up | Orientation::Down => selection.tower.size(),
+                    Orientation::Left | Orientation::Right => {
+                        (selection.tower.size().1, selection.tower.size().0)
+                    }
+                };
+
+                sprite.color = Color::srgb(0.0, 0.5, 1.0);
+
+                // Check if tiles are free
+                for i in 0..tower_size.0 {
+                    for j in 0..tower_size.1 {
+                        let pos = GridPos {
+                            col: grid_pos.col + i,
+                            row: grid_pos.row + j,
+                        };
+                        if !grid.is_free(&pos) {
+                            sprite.color = Color::srgb(1.0, 0.0, 0.0);
+                        }
+
+                        if pos.col > COLUMNS - 1 || pos.col < 0 || pos.row > ROWS - 1 || pos.row < 0
+                        {
+                            sprite.color = Color::srgb(1.0, 0.0, 0.0);
+                        }
+                    }
+                }
+                
+                sprite.custom_size = Some(Vec2 {
+                    x: tower_size.0 as f32 * TILE_SIZE,
+                    y: tower_size.1 as f32 * TILE_SIZE,
+                });
+
+                transform.translation =
+                    (grid_to_world_coords(grid_pos) - (TILE_SIZE * 0.5)).extend(1.0);
+
+                *visibility = Visibility::Inherited;
+            } else {
+                *visibility = Visibility::Hidden;
+            }
+        } else {
+            warn!("Unable to get Cursor Position {:?}", world_pos.unwrap_err())
+        }
     }
 }
