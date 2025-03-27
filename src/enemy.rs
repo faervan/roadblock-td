@@ -3,7 +3,7 @@ use std::time::Duration;
 use bevy::{prelude::*, utils::HashSet, window::PrimaryWindow};
 
 use crate::{
-    Orientation,
+    Orientation, RngResource,
     animation::AnimationConfig,
     grid::{COLUMNS, Grid, GridPos, ROWS, TILE_SIZE, grid_to_world_coords, world_to_grid_coords},
 };
@@ -165,15 +165,12 @@ fn spawn_enemy_spawners(
     mut commands: Commands,
     mut grid: ResMut<Grid>,
     asset_server: Res<AssetServer>,
+    mut rng: ResMut<RngResource>,
 ) {
-    println!("random isize: {}", fastrand::isize(0..5));
     let mut positions = HashSet::new();
     let goal = grid.enemy_goal.iter().next().unwrap().0;
     while positions.len() != 5 {
-        let [row, col] = [
-            fastrand::isize(0..(ROWS - 1)),
-            fastrand::isize(0..(COLUMNS - 1)),
-        ];
+        let [row, col] = [rng.0.isize(0..(ROWS - 1)), rng.0.isize(0..(COLUMNS - 1))];
         if ((goal.row - row).pow(2) + (goal.col - col).pow(2)).isqrt() >= 20 {
             positions.insert(GridPos::new(row, col));
         }

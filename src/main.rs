@@ -5,8 +5,8 @@ use bevy::{
     window::PrimaryWindow,
 };
 use bevy_inspector_egui::quick::WorldInspectorPlugin;
-use bevy_rand::{plugin::EntropyPlugin, prelude::WyRand};
 use enemy::EnemyPlugin;
+use fastrand::Rng;
 use grid::GridPlugin;
 use path_finding::PathfindingPlugin;
 use tower::TowerPlugin;
@@ -53,7 +53,7 @@ fn main() {
         app.add_plugins(WorldInspectorPlugin::new());
     }
 
-    app.add_plugins(EntropyPlugin::<WyRand>::default());
+    app.insert_resource(RngResource(Rng::new()));
 
     app.register_type::<MapInfo>();
 
@@ -76,6 +76,9 @@ struct MapInfo {
     /// Bottom left anchor of the map in bevy's coordinate system
     anchor: Vec2,
 }
+
+#[derive(Resource)]
+struct RngResource(Rng);
 
 #[derive(Reflect, Default, PartialEq, Debug)]
 enum Orientation {

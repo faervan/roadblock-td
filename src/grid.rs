@@ -90,7 +90,7 @@ impl GridPos {
         let mut neighbors = vec![];
 
         let mut push_maybe = |row, col| {
-            if row >= 0 && row < ROWS && col >= 0 && col < COLUMNS {
+            if (0..ROWS).contains(&row) && (0..COLUMNS).contains(&col) {
                 let tile = GridPos::new(row, col);
                 (!blocked.contains(&tile)).then(|| neighbors.push(tile));
             }
