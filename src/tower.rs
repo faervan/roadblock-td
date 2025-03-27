@@ -265,7 +265,7 @@ fn update_preview(
                         }
                     }
                 }
-                
+
                 sprite.custom_size = Some(Vec2 {
                     x: tower_size.0 as f32 * TILE_SIZE,
                     y: tower_size.1 as f32 * TILE_SIZE,

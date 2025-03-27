@@ -61,7 +61,7 @@ fn main() {
         GridPlugin,
         TowerPlugin,
         EnemyPlugin,
-        UIPlugin
+        UIPlugin,
     ));
     app.add_systems(Startup, init);
     app.add_systems(Update, (pan_camera, exit_on_ctrl_q));
