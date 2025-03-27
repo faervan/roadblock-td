@@ -1,18 +1,28 @@
 use bevy::prelude::*;
 
-use crate::tower::Tower;
+use crate::tower::{SelectedTower, Tower};
 
 // I would have automated this but I don't think it is possible :/
 static TYPES: [Tower; 3] = [Tower::Wall, Tower::SpikedWall, Tower::Canon];
 static TILE_SIZE_PX: f32 = 30.0;
+
+static BACKGROUND_COLOR: Color = Color::srgba(0.0, 0.0, 0.0, 0.5);
+static BUTTON_COLOR: Color = Color::srgb(0.3, 0.3, 0.3);
+static BUTTON_HOVER_COLOR: Color = Color::srgb(0.2, 0.2, 0.2);
+static BUTTON_PRESS_COLOR: Color = Color::srgb(0.1, 0.1, 0.1);
 
 pub struct UIPlugin;
 
 impl Plugin for UIPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(Startup, init_ui);
+        app.add_systems(Update, handle_buttons);
+        app.register_type::<TowerButton>();
     }
 }
+
+#[derive(Reflect, Component)]
+struct TowerButton(Tower);
 
 fn init_ui(mut commands: Commands) {
     commands
@@ -24,12 +34,13 @@ fn init_ui(mut commands: Commands) {
                 align_self: AlignSelf::FlexEnd,
                 ..default()
             },
-            BackgroundColor(Color::srgba(0.0, 0.0, 0.0, 0.5)),
+            BackgroundColor(BACKGROUND_COLOR),
         ))
         .with_children(|parent| {
-            for tower in TYPES.iter() {
+            for tower in TYPES {
                 parent
                     .spawn((
+                        TowerButton(tower),
                         Button,
                         Node {
                             width: Val::Px(190.0),
@@ -44,7 +55,7 @@ fn init_ui(mut commands: Commands) {
                             align_items: AlignItems::Center,
                             ..default()
                         },
-                        BackgroundColor(Color::srgb(0.2, 0.2, 0.2)),
+                        BackgroundColor(BUTTON_COLOR),
                     ))
                     .with_children(|parent| {
                         parent.spawn((
@@ -59,4 +70,23 @@ fn init_ui(mut commands: Commands) {
                     });
             }
         });
+}
+
+fn handle_buttons(
+    mut button: Query<
+        (&Interaction, &TowerButton, &mut BackgroundColor),
+        (Changed<Interaction>, With<Button>),
+    >,
+    mut selection: ResMut<SelectedTower>,
+) {
+    for (interaction, tower, mut color) in button.iter_mut() {
+        match interaction {
+            Interaction::Hovered => *color = BackgroundColor(BUTTON_HOVER_COLOR),
+            Interaction::Pressed => {
+                *color = BackgroundColor(BUTTON_PRESS_COLOR);
+                selection.tower = tower.0;
+            }
+            _ => *color = BackgroundColor(BUTTON_COLOR),
+        }
+    }
 }

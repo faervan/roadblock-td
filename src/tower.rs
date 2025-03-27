@@ -26,7 +26,7 @@ impl Plugin for TowerPlugin {
     }
 }
 
-#[derive(Reflect, Component)]
+#[derive(Reflect, Component, Clone, Copy)]
 #[reflect(Component)]
 #[require(Tile(tower_tile))]
 pub enum Tower {
@@ -107,7 +107,7 @@ fn tower_tile() -> Tile {
 #[derive(Reflect, Resource)]
 #[reflect(Resource)]
 pub struct SelectedTower {
-    tower: Tower,
+    pub tower: Tower,
     orientation: Orientation,
 }
 
@@ -175,7 +175,7 @@ pub fn place_tower(
 
                 let entity = commands
                     .spawn((
-                        Tower::Wall,
+                        tower.tower,
                         Tile {
                             pos: grid_pos,
                             tile_type: TileType::Tower,
