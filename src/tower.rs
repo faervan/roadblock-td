@@ -53,6 +53,14 @@ impl Tower {
         }
     }
 
+    fn offset(&self) -> (isize, isize) {
+        match self {
+            Self::Wall => (1, 0),
+            Self::SpikedWall => (1, 0),
+            Self::Canon => (1, 1),
+        }
+    }
+
     fn range(&self) -> f32 {
         match self {
             Self::Canon => TILE_SIZE * 10.0,
@@ -128,6 +136,17 @@ pub fn place_tower(
         let world_pos = camera.viewport_to_world_2d(cam_transform, mouse_pos);
         if let Ok(world_pos) = world_pos {
             if let Some(grid_pos) = world_to_grid_coords(world_pos) {
+                let grid_pos = match tower.orientation {
+                    Orientation::Up | Orientation::Down => GridPos {
+                        col: grid_pos.col - tower.tower.offset().0,
+                        row: grid_pos.row - tower.tower.offset().1,
+                    },
+                    Orientation::Left | Orientation::Right => GridPos {
+                        col: grid_pos.col - tower.tower.offset().1,
+                        row: grid_pos.row - tower.tower.offset().0,
+                    },
+                };
+
                 // Flip Dimensions of the tower in case of rotation
                 let tower_size = match tower.orientation {
                     Orientation::Up | Orientation::Down => tower.tower.size(),
@@ -238,6 +257,17 @@ fn update_preview(
         let world_pos = camera.viewport_to_world_2d(cam_transform, mouse_pos);
         if let Ok(world_pos) = world_pos {
             if let Some(grid_pos) = world_to_grid_coords(world_pos) {
+                let grid_pos = match selection.orientation {
+                    Orientation::Up | Orientation::Down => GridPos {
+                        col: grid_pos.col - selection.tower.offset().0,
+                        row: grid_pos.row - selection.tower.offset().1,
+                    },
+                    Orientation::Left | Orientation::Right => GridPos {
+                        col: grid_pos.col - selection.tower.offset().1,
+                        row: grid_pos.row - selection.tower.offset().0,
+                    },
+                };
+
                 // Flip Dimensions of the tower in case of rotation
                 let tower_size = match selection.orientation {
                     Orientation::Up | Orientation::Down => selection.tower.size(),
