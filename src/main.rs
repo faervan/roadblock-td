@@ -5,6 +5,7 @@ use bevy::{
     window::PrimaryWindow,
 };
 use bevy_inspector_egui::quick::WorldInspectorPlugin;
+use bevy_rand::{plugin::EntropyPlugin, prelude::WyRand};
 use enemy::EnemyPlugin;
 use grid::GridPlugin;
 use path_finding::PathfindingPlugin;
@@ -51,6 +52,9 @@ fn main() {
     if std::env::args().any(|a| a == "--egui") {
         app.add_plugins(WorldInspectorPlugin::new());
     }
+
+    app.add_plugins(EntropyPlugin::<WyRand>::default());
+
     app.register_type::<MapInfo>();
 
     app.add_plugins((

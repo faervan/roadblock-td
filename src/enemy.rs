@@ -1,12 +1,14 @@
-use bevy::{prelude::*, window::PrimaryWindow};
+use std::time::Duration;
+
+use rand_core::RngCore;
+
+use bevy::{prelude::*, utils::HashSet, window::PrimaryWindow};
+use bevy_rand::{global::GlobalEntropy, prelude::WyRand};
 
 use crate::{
     Orientation,
     animation::AnimationConfig,
-    grid::{
-        COLUMNS, Grid, GridPos, ROWS, TILE_SIZE, Tile, TileType, grid_to_world_coords,
-        world_to_grid_coords,
-    },
+    grid::{COLUMNS, Grid, GridPos, ROWS, TILE_SIZE, grid_to_world_coords, world_to_grid_coords},
 };
 
 pub struct EnemyPlugin;
@@ -15,7 +17,15 @@ impl Plugin for EnemyPlugin {
     fn build(&self, app: &mut App) {
         app.register_type::<Enemy>()
             .register_type::<EnemyPath>()
-            .add_systems(Startup, spawn_enemy_goal)
+            .register_type::<EnemyGoal>()
+            .register_type::<EnemySpawn>()
+            .add_systems(
+                Startup,
+                (
+                    spawn_enemy_goal,
+                    spawn_enemy_spawners.after(spawn_enemy_goal),
+                ),
+            )
             .add_systems(Update, (spawn_enemies, move_enemies));
     }
 }
@@ -114,13 +124,42 @@ impl EnemyPath {
 
 #[derive(Reflect, Component)]
 #[reflect(Component)]
-#[require(Tile(enemy_goal))]
+struct EnemySpawn(Timer);
+
+#[derive(Reflect, Component)]
+#[reflect(Component)]
 struct EnemyGoal;
 
-fn enemy_goal() -> Tile {
-    Tile {
-        pos: GridPos::default(),
-        tile_type: TileType::EnemyGoal,
+fn spawn_enemy_spawners(
+    mut commands: Commands,
+    mut grid: ResMut<Grid>,
+    asset_server: Res<AssetServer>,
+    mut rng: GlobalEntropy<WyRand>,
+) {
+    let mut positions = HashSet::new();
+    let goal = grid.enemy_goal.iter().next().unwrap().0;
+    while positions.len() != 5 {
+        let [row, col] = [
+            //rng.random_range(0..(ROWS - 1) as usize) as isize,
+            //rng.random_range(0..(COLUMNS - 1) as usize) as isize,
+            (rand::random::<u32>() as isize % ROWS),
+            (rand::random::<u32>() as isize % COLUMNS),
+        ];
+        if ((goal.row - row).abs().pow(2) + (goal.col - col).abs().pow(2)).isqrt()
+            >= TILE_SIZE as isize * 20
+        {
+            positions.insert(GridPos::new(row, col));
+        }
+    }
+    for pos in &positions {
+        let entity = commands
+            .spawn((
+                EnemySpawn(Timer::new(Duration::from_secs(1), TimerMode::Repeating)),
+                Sprite::from_image(asset_server.load("sprites/spawners/Asset 24.png")),
+                Transform::from_translation(grid_to_world_coords(*pos).extend(1.)),
+            ))
+            .id();
+        grid.enemy_spawn.insert(*pos, entity);
     }
 }
 
@@ -173,8 +212,7 @@ fn spawn_enemies(
                             ..Default::default()
                         },
                         Transform {
-                            translation: grid_to_world_coords(grid_pos).extend(1.0)
-                                + enemy.offset(),
+                            translation: grid_to_world_coords(grid_pos).extend(2.) + enemy.offset(),
                             scale: enemy.scale(),
                             ..default()
                         },
@@ -223,7 +261,7 @@ fn move_enemies(
                         }
                     }
                     enemy.current = tile;
-                    let next = grid_to_world_coords(tile).extend(1.) + enemy.offset();
+                    let next = grid_to_world_coords(tile).extend(2.) + enemy.offset();
                     path.next = Some(next);
                     next
                 } else {
