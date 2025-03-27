@@ -1,4 +1,5 @@
 use std::fmt::{Debug, Display};
+use std::ops::Add;
 
 use bevy::prelude::*;
 use bevy::utils::HashMap;
@@ -66,6 +67,43 @@ pub enum TileType {
 pub struct GridPos {
     pub row: isize,
     pub col: isize,
+}
+
+impl Add<GridPos> for GridPos {
+    type Output = GridPos;
+    fn add(self, rhs: GridPos) -> Self::Output {
+        GridPos {
+            row: self.row + rhs.row,
+            col: self.col + rhs.col,
+        }
+    }
+}
+impl Add<&GridPos> for GridPos {
+    type Output = GridPos;
+    fn add(self, rhs: &GridPos) -> Self::Output {
+        GridPos {
+            row: self.row + rhs.row,
+            col: self.col + rhs.col,
+        }
+    }
+}
+impl Add<GridPos> for &GridPos {
+    type Output = GridPos;
+    fn add(self, rhs: GridPos) -> Self::Output {
+        GridPos {
+            row: self.row + rhs.row,
+            col: self.col + rhs.col,
+        }
+    }
+}
+impl Add<&GridPos> for &GridPos {
+    type Output = GridPos;
+    fn add(self, rhs: &GridPos) -> Self::Output {
+        GridPos {
+            row: self.row + rhs.row,
+            col: self.col + rhs.col,
+        }
+    }
 }
 
 impl Tile {
