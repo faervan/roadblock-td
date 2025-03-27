@@ -33,7 +33,8 @@ pub struct PathChangedEvent {
 }
 
 impl PathChangedEvent {
-    pub fn now_free(freed: Vec<GridPos>) -> Self {
+    /// Relevant when we implement tower replacing/destruction
+    pub fn _now_free(freed: Vec<GridPos>) -> Self {
         Self {
             changed: freed,
             now_free: true,

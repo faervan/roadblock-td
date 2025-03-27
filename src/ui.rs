@@ -1,15 +1,15 @@
 use bevy::prelude::*;
 
-use crate::tower::{SelectedTower, Tower};
+use crate::tower::{SelectedTower, Tower, TowerPlaceState};
 
 // I would have automated this but I don't think it is possible :/
-static TYPES: [Tower; 3] = [Tower::Wall, Tower::SpikedWall, Tower::Canon];
-static TILE_SIZE_PX: f32 = 30.0;
+const TYPES: [Tower; 3] = [Tower::Wall, Tower::SpikedWall, Tower::Canon];
+const TILE_SIZE_PX: f32 = 30.0;
 
-static BACKGROUND_COLOR: Color = Color::srgba(0.0, 0.0, 0.0, 0.5);
-static BUTTON_COLOR: Color = Color::srgb(0.3, 0.3, 0.3);
-static BUTTON_HOVER_COLOR: Color = Color::srgb(0.2, 0.2, 0.2);
-static BUTTON_PRESS_COLOR: Color = Color::srgb(0.1, 0.1, 0.1);
+const BACKGROUND_COLOR: Color = Color::srgba(0.0, 0.0, 0.0, 0.5);
+const BUTTON_COLOR: Color = Color::srgb(0.3, 0.3, 0.3);
+const BUTTON_HOVER_COLOR: Color = Color::srgb(0.2, 0.2, 0.2);
+const BUTTON_PRESS_COLOR: Color = Color::srgb(0.1, 0.1, 0.1);
 
 pub struct UIPlugin;
 
@@ -20,6 +20,9 @@ impl Plugin for UIPlugin {
         app.register_type::<TowerButton>();
     }
 }
+
+type ButtonQueryData<'a, T> = (&'a Interaction, &'a T, &'a mut BackgroundColor);
+type ButtonQueryFilter = (Changed<Interaction>, With<Button>);
 
 #[derive(Reflect, Component)]
 struct TowerButton(Tower);
@@ -73,11 +76,9 @@ fn init_ui(mut commands: Commands) {
 }
 
 fn handle_buttons(
-    mut button: Query<
-        (&Interaction, &TowerButton, &mut BackgroundColor),
-        (Changed<Interaction>, With<Button>),
-    >,
+    mut button: Query<ButtonQueryData<TowerButton>, ButtonQueryFilter>,
     mut selection: ResMut<SelectedTower>,
+    mut next_state: ResMut<NextState<TowerPlaceState>>,
 ) {
     for (interaction, tower, mut color) in button.iter_mut() {
         match interaction {
@@ -85,6 +86,7 @@ fn handle_buttons(
             Interaction::Pressed => {
                 *color = BackgroundColor(BUTTON_PRESS_COLOR);
                 selection.tower = tower.0;
+                next_state.set(TowerPlaceState::Active);
             }
             _ => *color = BackgroundColor(BUTTON_COLOR),
         }

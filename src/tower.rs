@@ -1,13 +1,10 @@
 use std::time::Duration;
 
-use bevy::{prelude::*, window::PrimaryWindow};
+use bevy::{input::common_conditions::input_just_pressed, prelude::*, window::PrimaryWindow};
 
 use crate::{
     Orientation,
-    grid::{
-        COLUMNS, Grid, GridPos, ROWS, TILE_SIZE, Tile, TileType, grid_to_world_coords,
-        world_to_grid_coords,
-    },
+    grid::{COLUMNS, Grid, GridPos, ROWS, TILE_SIZE, grid_to_world_coords, world_to_grid_coords},
     path_finding::PathChangedEvent,
 };
 
@@ -19,16 +16,37 @@ impl Plugin for TowerPlugin {
             tower: Tower::Wall,
             orientation: Orientation::Up,
         });
-        app.add_systems(Startup, spawn_preview);
-        app.add_systems(Update, (place_tower, change_rotation, update_preview));
+        app.init_state::<TowerPlaceState>();
+        app.add_systems(OnEnter(TowerPlaceState::Active), spawn_preview);
+        app.add_systems(OnExit(TowerPlaceState::Active), despawn_preview);
+        app.add_systems(
+            Update,
+            (
+                place_tower.run_if(input_just_pressed(MouseButton::Left)),
+                change_rotation.run_if(input_just_pressed(KeyCode::KeyR)),
+                update_preview,
+                exit_tower_place_state.run_if(input_just_pressed(KeyCode::Escape)),
+            )
+                .run_if(in_state(TowerPlaceState::Active)),
+        );
         app.register_type::<Tower>();
         app.register_type::<TowerPreview>();
     }
 }
 
+#[derive(States, Clone, PartialEq, Eq, Hash, Debug, Default)]
+pub enum TowerPlaceState {
+    Active,
+    #[default]
+    Inactive,
+}
+
+fn exit_tower_place_state(mut next_state: ResMut<NextState<TowerPlaceState>>) {
+    next_state.set(TowerPlaceState::Inactive);
+}
+
 #[derive(Reflect, Component, Clone, Copy)]
 #[reflect(Component)]
-#[require(Tile(tower_tile))]
 pub enum Tower {
     Wall,
     SpikedWall,
@@ -37,7 +55,7 @@ pub enum Tower {
 
 impl Tower {
     //temp values as balancing cannot happen until a basic gameplay loop is in place
-    fn max_hp(&self) -> u32 {
+    fn _max_hp(&self) -> u32 {
         match self {
             Self::Wall => 100,
             Self::SpikedWall => 100,
@@ -61,46 +79,39 @@ impl Tower {
         }
     }
 
-    fn range(&self) -> f32 {
+    fn _range(&self) -> f32 {
         match self {
             Self::Canon => TILE_SIZE * 10.0,
             _ => 0.0,
         }
     }
 
-    fn strength(&self) -> u32 {
+    fn _strength(&self) -> u32 {
         match self {
             Self::Canon => 15,
             _ => 0,
         }
     }
 
-    fn fire_cooldown(&self) -> Duration {
+    fn _fire_cooldown(&self) -> Duration {
         match self {
             Self::Canon => Duration::from_secs(1),
             _ => Duration::ZERO,
         }
     }
 
-    fn contact_damage(&self) -> u32 {
+    fn _contact_damage(&self) -> u32 {
         match self {
             Self::SpikedWall => 5,
             _ => 0,
         }
     }
 
-    fn contact_damage_cooldown(&self) -> Duration {
+    fn _contact_damage_cooldown(&self) -> Duration {
         match self {
             Self::SpikedWall => Duration::from_secs(1),
             _ => Duration::ZERO,
         }
-    }
-}
-
-fn tower_tile() -> Tile {
-    Tile {
-        pos: GridPos::default(),
-        tile_type: TileType::Tower,
     }
 }
 
@@ -115,19 +126,17 @@ pub struct SelectedTower {
 #[reflect(Component)]
 struct TowerPreview;
 
+#[allow(clippy::too_many_arguments)]
 pub fn place_tower(
     mut commands: Commands,
     mut event_writer: EventWriter<PathChangedEvent>,
     window: Single<&Window, With<PrimaryWindow>>,
     cam: Single<(&Camera, &GlobalTransform)>,
-    mouse_input: Res<ButtonInput<MouseButton>>,
+    input: Res<ButtonInput<KeyCode>>,
+    mut next_state: ResMut<NextState<TowerPlaceState>>,
     mut grid: ResMut<Grid>,
     tower: Res<SelectedTower>,
 ) {
-    if !mouse_input.just_pressed(MouseButton::Left) {
-        return;
-    }
-
     let mouse_pos = window.cursor_position();
 
     if let Some(mouse_pos) = mouse_pos {
@@ -176,10 +185,6 @@ pub fn place_tower(
                 let entity = commands
                     .spawn((
                         tower.tower,
-                        Tile {
-                            pos: grid_pos,
-                            tile_type: TileType::Tower,
-                        },
                         Sprite {
                             color: Color::srgb(0.0, 0.5, 1.0),
                             custom_size: Some(Vec2 {
@@ -210,6 +215,10 @@ pub fn place_tower(
                     }
                 }
                 event_writer.send(PathChangedEvent::now_blocked(blocked));
+
+                if !input.pressed(KeyCode::ShiftLeft) {
+                    next_state.set(TowerPlaceState::Inactive);
+                }
             }
         } else {
             warn!("Unable to get Cursor Position {:?}", world_pos.unwrap_err())
@@ -217,15 +226,13 @@ pub fn place_tower(
     }
 }
 
-fn change_rotation(input: Res<ButtonInput<KeyCode>>, mut selection: ResMut<SelectedTower>) {
-    if input.just_pressed(KeyCode::KeyR) {
-        selection.orientation = match selection.orientation {
-            Orientation::Up => Orientation::Right,
-            Orientation::Right => Orientation::Down,
-            Orientation::Down => Orientation::Left,
-            Orientation::Left => Orientation::Up,
-        };
-    }
+fn change_rotation(mut selection: ResMut<SelectedTower>) {
+    selection.orientation = match selection.orientation {
+        Orientation::Up => Orientation::Right,
+        Orientation::Right => Orientation::Down,
+        Orientation::Down => Orientation::Left,
+        Orientation::Left => Orientation::Up,
+    };
 }
 
 fn spawn_preview(mut commands: Commands) {
@@ -238,6 +245,10 @@ fn spawn_preview(mut commands: Commands) {
         },
         Visibility::Hidden,
     ));
+}
+
+fn despawn_preview(mut commands: Commands, preview: Single<Entity, With<TowerPreview>>) {
+    commands.entity(*preview).despawn();
 }
 
 fn update_preview(

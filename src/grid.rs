@@ -23,7 +23,6 @@ impl Plugin for GridPlugin {
             enemy_goal: HashMap::new(),
         });
         app.register_type::<Grid>();
-        app.register_type::<Tile>();
         app.add_systems(Startup, spawn_map);
     }
 }
@@ -47,20 +46,6 @@ impl Grid {
     pub fn blocked_tiles(&self) -> HashSet<&GridPos> {
         self.tower.iter().map(|(pos, _)| pos).collect()
     }
-}
-
-#[derive(Reflect, Component, Clone, Copy)]
-#[reflect(Component)]
-pub struct Tile {
-    pub pos: GridPos,
-    pub tile_type: TileType,
-}
-
-#[derive(Reflect, Hash, PartialEq, Eq, Clone, Copy)]
-pub enum TileType {
-    Tower,
-    EnemySpawn,
-    EnemyGoal,
 }
 
 #[derive(Reflect, PartialEq, Eq, Hash, Clone, Copy, Default)]
@@ -106,15 +91,6 @@ impl Add<&GridPos> for &GridPos {
     }
 }
 
-impl Tile {
-    pub fn new(row: isize, col: isize, tile_type: TileType) -> Self {
-        Tile {
-            pos: GridPos { row, col },
-            tile_type,
-        }
-    }
-}
-
 impl GridPos {
     pub fn new(row: isize, col: isize) -> Self {
         GridPos { row, col }
@@ -145,7 +121,7 @@ impl GridPos {
 
 impl Display for GridPos {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "Tile ({}, {})", self.row, self.col)
+        write!(f, "GridPos ({}, {})", self.row, self.col)
     }
 }
 
