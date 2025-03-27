@@ -29,7 +29,7 @@ impl Plugin for TowerPlugin {
 #[derive(Reflect, Component)]
 #[reflect(Component)]
 #[require(Tile(tower_tile))]
-enum Tower {
+pub enum Tower {
     Wall,
     SpikedWall,
     Canon,
@@ -45,7 +45,7 @@ impl Tower {
         }
     }
 
-    fn size(&self) -> (isize, isize) {
+    pub fn size(&self) -> (isize, isize) {
         match self {
             Self::Wall => (4, 1),
             Self::SpikedWall => (4, 1),

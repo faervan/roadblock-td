@@ -9,12 +9,14 @@ use enemy::EnemyPlugin;
 use grid::GridPlugin;
 use path_finding::PathfindingPlugin;
 use tower::TowerPlugin;
+use ui::UIPlugin;
 
 mod animation;
 mod enemy;
 mod grid;
 mod path_finding;
 mod tower;
+mod ui;
 
 const BACKGROUND_COLOR: Color = Color::hsl(150., 1., 0.4);
 
@@ -59,6 +61,7 @@ fn main() {
         GridPlugin,
         TowerPlugin,
         EnemyPlugin,
+        UIPlugin
     ));
     app.add_systems(Startup, init);
     app.add_systems(Update, (pan_camera, exit_on_ctrl_q));
