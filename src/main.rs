@@ -30,7 +30,7 @@ fn main() {
             .set(WindowPlugin {
                 primary_window: Some(Window {
                     present_mode: bevy::window::PresentMode::AutoNoVsync,
-                    mode: bevy::window::WindowMode::BorderlessFullscreen(MonitorSelection::Current),
+                    mode: bevy::window::WindowMode::BorderlessFullscreen(MonitorSelection::Primary),
                     ..default()
                 }),
                 ..default()
