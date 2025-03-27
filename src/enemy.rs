@@ -1,12 +1,11 @@
-use bevy::{prelude::*, window::PrimaryWindow};
+use std::time::Duration;
+
+use bevy::{prelude::*, utils::HashSet, window::PrimaryWindow};
 
 use crate::{
-    Orientation,
+    Orientation, RngResource,
     animation::AnimationConfig,
-    grid::{
-        COLUMNS, Grid, GridPos, ROWS, TILE_SIZE, Tile, TileType, grid_to_world_coords,
-        world_to_grid_coords,
-    },
+    grid::{COLUMNS, Grid, GridPos, ROWS, TILE_SIZE, grid_to_world_coords, world_to_grid_coords},
 };
 
 pub struct EnemyPlugin;
@@ -15,8 +14,16 @@ impl Plugin for EnemyPlugin {
     fn build(&self, app: &mut App) {
         app.register_type::<Enemy>()
             .register_type::<EnemyPath>()
-            .add_systems(Startup, spawn_enemy_goal)
-            .add_systems(Update, (spawn_enemies, move_enemies));
+            .register_type::<EnemyGoal>()
+            .register_type::<EnemySpawn>()
+            .add_systems(
+                Startup,
+                (
+                    spawn_enemy_goal,
+                    spawn_enemy_spawners.after(spawn_enemy_goal),
+                ),
+            )
+            .add_systems(Update, (spawn_enemies, spawn_enemies_manual, move_enemies));
     }
 }
 
@@ -114,13 +121,74 @@ impl EnemyPath {
 
 #[derive(Reflect, Component)]
 #[reflect(Component)]
-#[require(Tile(enemy_goal))]
+struct EnemySpawn {
+    variant: EnemySpawnType,
+    timer: Timer,
+}
+
+#[derive(Reflect)]
+enum EnemySpawnType {
+    RedTower,
+}
+
+impl EnemySpawn {
+    fn new(variant: EnemySpawnType) -> Self {
+        Self {
+            variant,
+            timer: Timer::new(Duration::from_secs(3), TimerMode::Repeating),
+        }
+    }
+    fn sprite(&self) -> &str {
+        match self.variant {
+            EnemySpawnType::RedTower => "sprites/spawners/red_spawner.png",
+        }
+    }
+
+    fn offset(&self) -> Vec3 {
+        match self.variant {
+            EnemySpawnType::RedTower => Vec3::new(13., 15., 0.),
+        }
+    }
+
+    fn scale(&self) -> Vec3 {
+        match self.variant {
+            EnemySpawnType::RedTower => Vec3::splat(0.8),
+        }
+    }
+}
+
+#[derive(Reflect, Component)]
+#[reflect(Component)]
 struct EnemyGoal;
 
-fn enemy_goal() -> Tile {
-    Tile {
-        pos: GridPos::default(),
-        tile_type: TileType::EnemyGoal,
+fn spawn_enemy_spawners(
+    mut commands: Commands,
+    mut grid: ResMut<Grid>,
+    asset_server: Res<AssetServer>,
+    mut rng: ResMut<RngResource>,
+) {
+    let mut positions = HashSet::new();
+    let goal = grid.enemy_goal.iter().next().unwrap().0;
+    while positions.len() != 5 {
+        let [row, col] = [rng.0.isize(0..(ROWS - 1)), rng.0.isize(0..(COLUMNS - 1))];
+        if ((goal.row - row).pow(2) + (goal.col - col).pow(2)).isqrt() >= 20 {
+            positions.insert(GridPos::new(row, col));
+        }
+    }
+    for pos in &positions {
+        let spawn = EnemySpawn::new(EnemySpawnType::RedTower);
+        let entity = commands
+            .spawn((
+                Sprite::from_image(asset_server.load(spawn.sprite())),
+                Transform {
+                    translation: grid_to_world_coords(*pos).extend(1.) + spawn.offset(),
+                    scale: spawn.scale(),
+                    ..Default::default()
+                },
+                spawn,
+            ))
+            .id();
+        grid.enemy_spawn.insert(*pos, entity);
     }
 }
 
@@ -139,7 +207,7 @@ fn spawn_enemy_goal(mut commands: Commands, mut grid: ResMut<Grid>) {
     grid.enemy_goal.insert(grid_pos, entity);
 }
 
-fn spawn_enemies(
+fn spawn_enemies_manual(
     mut commands: Commands,
     window: Single<&Window, With<PrimaryWindow>>,
     cam: Single<(&Camera, &GlobalTransform)>,
@@ -173,8 +241,7 @@ fn spawn_enemies(
                             ..Default::default()
                         },
                         Transform {
-                            translation: grid_to_world_coords(grid_pos).extend(1.0)
-                                + enemy.offset(),
+                            translation: grid_to_world_coords(grid_pos).extend(2.) + enemy.offset(),
                             scale: enemy.scale(),
                             ..default()
                         },
@@ -185,6 +252,43 @@ fn spawn_enemies(
             }
         } else {
             warn!("Unable to get Cursor Position {:?}", world_pos.unwrap_err())
+        }
+    }
+}
+
+fn spawn_enemies(
+    mut commands: Commands,
+    grid: Res<Grid>,
+    time: Res<Time>,
+    mut spawners: Query<&mut EnemySpawn>,
+    asset_server: Res<AssetServer>,
+    mut texture_atlas_layouts: ResMut<Assets<TextureAtlasLayout>>,
+) {
+    for (pos, entity) in &grid.enemy_spawn {
+        if let Ok(mut spawn) = spawners.get_mut(*entity) {
+            spawn.timer.tick(time.delta());
+            if !spawn.timer.finished() {
+                continue;
+            }
+            let enemy = Enemy::new(
+                *pos,
+                *grid.enemy_goal.iter().next().unwrap().0,
+                EnemyType::Skeleton,
+            );
+            commands.spawn((
+                Sprite {
+                    image: asset_server.load(enemy.sprite_sheet()),
+                    texture_atlas: Some(enemy.layout(&mut texture_atlas_layouts)),
+                    ..Default::default()
+                },
+                Transform {
+                    translation: grid_to_world_coords(*pos).extend(2.) + enemy.offset(),
+                    scale: enemy.scale(),
+                    ..default()
+                },
+                enemy.animation_config(),
+                enemy,
+            ));
         }
     }
 }
@@ -223,7 +327,7 @@ fn move_enemies(
                         }
                     }
                     enemy.current = tile;
-                    let next = grid_to_world_coords(tile).extend(1.) + enemy.offset();
+                    let next = grid_to_world_coords(tile).extend(2.) + enemy.offset();
                     path.next = Some(next);
                     next
                 } else {

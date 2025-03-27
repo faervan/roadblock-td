@@ -6,6 +6,7 @@ use bevy::{
 };
 use bevy_inspector_egui::quick::WorldInspectorPlugin;
 use enemy::EnemyPlugin;
+use fastrand::Rng;
 use grid::GridPlugin;
 use path_finding::PathfindingPlugin;
 use tower::TowerPlugin;
@@ -53,6 +54,9 @@ fn main() {
     if std::env::args().any(|a| a == "--egui") {
         app.add_plugins(WorldInspectorPlugin::new());
     }
+
+    app.insert_resource(RngResource(Rng::new()));
+
     app.register_type::<MapInfo>();
 
     app.add_plugins((
@@ -75,6 +79,9 @@ struct MapInfo {
     /// Bottom left anchor of the map in bevy's coordinate system
     anchor: Vec2,
 }
+
+#[derive(Resource)]
+struct RngResource(Rng);
 
 #[derive(Reflect, Default, PartialEq, Debug)]
 enum Orientation {
