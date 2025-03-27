@@ -1,9 +1,6 @@
 use std::time::Duration;
 
-use rand_core::RngCore;
-
 use bevy::{prelude::*, utils::HashSet, window::PrimaryWindow};
-use bevy_rand::{global::GlobalEntropy, prelude::WyRand};
 
 use crate::{
     Orientation,
@@ -26,7 +23,7 @@ impl Plugin for EnemyPlugin {
                     spawn_enemy_spawners.after(spawn_enemy_goal),
                 ),
             )
-            .add_systems(Update, (spawn_enemies, move_enemies));
+            .add_systems(Update, (spawn_enemies, spawn_enemies_manual, move_enemies));
     }
 }
 
@@ -124,7 +121,41 @@ impl EnemyPath {
 
 #[derive(Reflect, Component)]
 #[reflect(Component)]
-struct EnemySpawn(Timer);
+struct EnemySpawn {
+    variant: EnemySpawnType,
+    timer: Timer,
+}
+
+#[derive(Reflect)]
+enum EnemySpawnType {
+    RedTower,
+}
+
+impl EnemySpawn {
+    fn new(variant: EnemySpawnType) -> Self {
+        Self {
+            variant,
+            timer: Timer::new(Duration::from_secs(3), TimerMode::Repeating),
+        }
+    }
+    fn sprite(&self) -> &str {
+        match self.variant {
+            EnemySpawnType::RedTower => "sprites/spawners/red_spawner.png",
+        }
+    }
+
+    fn offset(&self) -> Vec3 {
+        match self.variant {
+            EnemySpawnType::RedTower => Vec3::new(13., 15., 0.),
+        }
+    }
+
+    fn scale(&self) -> Vec3 {
+        match self.variant {
+            EnemySpawnType::RedTower => Vec3::splat(0.8),
+        }
+    }
+}
 
 #[derive(Reflect, Component)]
 #[reflect(Component)]
@@ -134,29 +165,30 @@ fn spawn_enemy_spawners(
     mut commands: Commands,
     mut grid: ResMut<Grid>,
     asset_server: Res<AssetServer>,
-    mut rng: GlobalEntropy<WyRand>,
 ) {
+    println!("random isize: {}", fastrand::isize(0..5));
     let mut positions = HashSet::new();
     let goal = grid.enemy_goal.iter().next().unwrap().0;
     while positions.len() != 5 {
         let [row, col] = [
-            //rng.random_range(0..(ROWS - 1) as usize) as isize,
-            //rng.random_range(0..(COLUMNS - 1) as usize) as isize,
-            (rand::random::<u32>() as isize % ROWS),
-            (rand::random::<u32>() as isize % COLUMNS),
+            fastrand::isize(0..(ROWS - 1)),
+            fastrand::isize(0..(COLUMNS - 1)),
         ];
-        if ((goal.row - row).abs().pow(2) + (goal.col - col).abs().pow(2)).isqrt()
-            >= TILE_SIZE as isize * 20
-        {
+        if ((goal.row - row).pow(2) + (goal.col - col).pow(2)).isqrt() >= 20 {
             positions.insert(GridPos::new(row, col));
         }
     }
     for pos in &positions {
+        let spawn = EnemySpawn::new(EnemySpawnType::RedTower);
         let entity = commands
             .spawn((
-                EnemySpawn(Timer::new(Duration::from_secs(1), TimerMode::Repeating)),
-                Sprite::from_image(asset_server.load("sprites/spawners/Asset 24.png")),
-                Transform::from_translation(grid_to_world_coords(*pos).extend(1.)),
+                Sprite::from_image(asset_server.load(spawn.sprite())),
+                Transform {
+                    translation: grid_to_world_coords(*pos).extend(1.) + spawn.offset(),
+                    scale: spawn.scale(),
+                    ..Default::default()
+                },
+                spawn,
             ))
             .id();
         grid.enemy_spawn.insert(*pos, entity);
@@ -178,7 +210,7 @@ fn spawn_enemy_goal(mut commands: Commands, mut grid: ResMut<Grid>) {
     grid.enemy_goal.insert(grid_pos, entity);
 }
 
-fn spawn_enemies(
+fn spawn_enemies_manual(
     mut commands: Commands,
     window: Single<&Window, With<PrimaryWindow>>,
     cam: Single<(&Camera, &GlobalTransform)>,
@@ -223,6 +255,43 @@ fn spawn_enemies(
             }
         } else {
             warn!("Unable to get Cursor Position {:?}", world_pos.unwrap_err())
+        }
+    }
+}
+
+fn spawn_enemies(
+    mut commands: Commands,
+    grid: Res<Grid>,
+    time: Res<Time>,
+    mut spawners: Query<&mut EnemySpawn>,
+    asset_server: Res<AssetServer>,
+    mut texture_atlas_layouts: ResMut<Assets<TextureAtlasLayout>>,
+) {
+    for (pos, entity) in &grid.enemy_spawn {
+        if let Ok(mut spawn) = spawners.get_mut(*entity) {
+            spawn.timer.tick(time.delta());
+            if !spawn.timer.finished() {
+                continue;
+            }
+            let enemy = Enemy::new(
+                *pos,
+                *grid.enemy_goal.iter().next().unwrap().0,
+                EnemyType::Skeleton,
+            );
+            commands.spawn((
+                Sprite {
+                    image: asset_server.load(enemy.sprite_sheet()),
+                    texture_atlas: Some(enemy.layout(&mut texture_atlas_layouts)),
+                    ..Default::default()
+                },
+                Transform {
+                    translation: grid_to_world_coords(*pos).extend(2.) + enemy.offset(),
+                    scale: enemy.scale(),
+                    ..default()
+                },
+                enemy.animation_config(),
+                enemy,
+            ));
         }
     }
 }
