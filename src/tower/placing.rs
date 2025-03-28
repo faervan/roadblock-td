@@ -1,36 +1,34 @@
-use std::time::Duration;
-
 use bevy::{input::common_conditions::input_just_pressed, prelude::*, window::PrimaryWindow};
 
 use crate::{
     Orientation,
+    enemy::PathChangedEvent,
     grid::{COLUMNS, Grid, GridPos, ROWS, TILE_SIZE, grid_to_world_coords, world_to_grid_coords},
-    path_finding::PathChangedEvent,
 };
 
-pub struct TowerPlugin;
+use super::Tower;
 
-impl Plugin for TowerPlugin {
+pub struct TowerPlacingPlugin;
+
+impl Plugin for TowerPlacingPlugin {
     fn build(&self, app: &mut App) {
-        app.insert_resource(SelectedTower {
-            tower: Tower::Wall,
-            orientation: Orientation::Up,
-        });
-        app.init_state::<TowerPlaceState>();
-        app.add_systems(OnEnter(TowerPlaceState::Active), spawn_preview);
-        app.add_systems(OnExit(TowerPlaceState::Active), despawn_preview);
-        app.add_systems(
-            Update,
-            (
-                place_tower.run_if(input_just_pressed(MouseButton::Left)),
-                change_rotation.run_if(input_just_pressed(KeyCode::KeyR)),
-                update_preview,
-                exit_tower_place_state.run_if(input_just_pressed(KeyCode::Escape)),
-            )
-                .run_if(in_state(TowerPlaceState::Active)),
-        );
-        app.register_type::<Tower>();
-        app.register_type::<TowerPreview>();
+        app.register_type::<TowerPreview>()
+            .insert_resource(SelectedTower {
+                tower: Tower::Wall,
+                orientation: Orientation::Up,
+            })
+            .add_systems(OnEnter(TowerPlaceState::Active), spawn_preview)
+            .add_systems(OnExit(TowerPlaceState::Active), despawn_preview)
+            .add_systems(
+                Update,
+                (
+                    place_tower.run_if(input_just_pressed(MouseButton::Left)),
+                    change_rotation.run_if(input_just_pressed(KeyCode::KeyR)),
+                    update_preview,
+                    exit_tower_place_state.run_if(input_just_pressed(KeyCode::Escape)),
+                )
+                    .run_if(in_state(TowerPlaceState::Active)),
+            );
     }
 }
 
@@ -43,76 +41,6 @@ pub enum TowerPlaceState {
 
 fn exit_tower_place_state(mut next_state: ResMut<NextState<TowerPlaceState>>) {
     next_state.set(TowerPlaceState::Inactive);
-}
-
-#[derive(Reflect, Component, Clone, Copy)]
-#[reflect(Component)]
-pub enum Tower {
-    Wall,
-    SpikedWall,
-    Canon,
-}
-
-impl Tower {
-    //temp values as balancing cannot happen until a basic gameplay loop is in place
-    fn _max_hp(&self) -> u32 {
-        match self {
-            Self::Wall => 100,
-            Self::SpikedWall => 100,
-            Self::Canon => 80,
-        }
-    }
-
-    pub fn size(&self) -> (isize, isize) {
-        match self {
-            Self::Wall => (4, 1),
-            Self::SpikedWall => (4, 1),
-            Self::Canon => (3, 3),
-        }
-    }
-
-    fn offset(&self) -> (isize, isize) {
-        match self {
-            Self::Wall => (1, 0),
-            Self::SpikedWall => (1, 0),
-            Self::Canon => (1, 1),
-        }
-    }
-
-    fn _range(&self) -> f32 {
-        match self {
-            Self::Canon => TILE_SIZE * 10.0,
-            _ => 0.0,
-        }
-    }
-
-    fn _strength(&self) -> u32 {
-        match self {
-            Self::Canon => 15,
-            _ => 0,
-        }
-    }
-
-    fn _fire_cooldown(&self) -> Duration {
-        match self {
-            Self::Canon => Duration::from_secs(1),
-            _ => Duration::ZERO,
-        }
-    }
-
-    fn _contact_damage(&self) -> u32 {
-        match self {
-            Self::SpikedWall => 5,
-            _ => 0,
-        }
-    }
-
-    fn _contact_damage_cooldown(&self) -> Duration {
-        match self {
-            Self::SpikedWall => Duration::from_secs(1),
-            _ => Duration::ZERO,
-        }
-    }
 }
 
 #[derive(Reflect, Resource)]

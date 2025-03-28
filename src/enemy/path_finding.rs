@@ -4,8 +4,10 @@ use bevy::{
 };
 
 use crate::{
-    enemy::{Enemy, EnemyPath},
-    grid::{Grid, GridPos},
+    Orientation,
+    animation::AnimationConfig,
+    enemy::Enemy,
+    grid::{Grid, GridPos, grid_to_world_coords},
     tower::place_tower,
 };
 
@@ -13,15 +15,31 @@ pub struct PathfindingPlugin;
 
 impl Plugin for PathfindingPlugin {
     fn build(&self, app: &mut App) {
-        app.add_event::<PathChangedEvent>().add_systems(
-            Update,
-            (
-                check_for_broken_paths
-                    .run_if(on_event::<PathChangedEvent>)
-                    .after(place_tower),
-                enemy_get_path.after(check_for_broken_paths),
-            ),
-        );
+        app.register_type::<EnemyPath>()
+            .add_event::<PathChangedEvent>()
+            .add_systems(
+                Update,
+                (
+                    check_for_broken_paths
+                        .run_if(on_event::<PathChangedEvent>)
+                        .after(place_tower),
+                    enemy_get_path.after(check_for_broken_paths),
+                    move_enemies,
+                ),
+            );
+    }
+}
+
+#[derive(Reflect, Component)]
+#[reflect(Component)]
+pub struct EnemyPath {
+    pub steps: Vec<GridPos>,
+    next: Option<Vec3>,
+}
+
+impl EnemyPath {
+    pub fn new(steps: Vec<GridPos>) -> Self {
+        Self { steps, next: None }
     }
 }
 
@@ -153,6 +171,57 @@ fn check_for_broken_paths(
                 commands.entity(entity).remove::<EnemyPath>();
                 continue 'outer;
             }
+        }
+    }
+}
+
+pub fn move_enemies(
+    mut query: Query<(
+        &mut EnemyPath,
+        &mut Enemy,
+        &mut AnimationConfig,
+        &mut Sprite,
+        &mut Transform,
+        Entity,
+    )>,
+    time: Res<Time>,
+    mut commands: Commands,
+) {
+    for (mut path, mut enemy, mut animation, mut sprite, mut pos, entity) in &mut query {
+        let next = match path.next {
+            Some(tile) => tile,
+            None => {
+                if let Some(tile) = path.steps.pop() {
+                    let orientation =
+                        match (tile.row > enemy.current.row, tile.col > enemy.current.col) {
+                            (true, false) => Orientation::Up,
+                            (false, true) => Orientation::Right,
+                            _ => match tile.row < enemy.current.row {
+                                true => Orientation::Down,
+                                false => Orientation::Left,
+                            },
+                        };
+                    if orientation != enemy.orientation {
+                        enemy.orientation = orientation;
+                        *animation = enemy.animation_config();
+                        if let Some(atlas) = &mut sprite.texture_atlas {
+                            atlas.index = enemy.sprite_indices().0;
+                        }
+                    }
+                    enemy.current = tile;
+                    let next = grid_to_world_coords(tile).extend(2.) + enemy.offset();
+                    path.next = Some(next);
+                    next
+                } else {
+                    commands.entity(entity).despawn();
+                    return;
+                }
+            }
+        };
+        let direction = next - pos.translation;
+        pos.translation += direction.normalize() * time.delta_secs() * 150.;
+        if pos.translation.distance(next) >= direction.length() {
+            path.next = None;
         }
     }
 }
