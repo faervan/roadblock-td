@@ -58,13 +58,17 @@ fn enemy_attacking(
             }
         }
 
-        commands.entity(entity).remove::<Attacking>().insert((
-            enemy.walk_animation_config(),
-            Sprite {
-                image: asset_server.load(enemy.walk_sprites()),
-                texture_atlas: Some(enemy.walk_layout(&mut texture_atlas_layouts)),
-                ..Default::default()
-            },
-        ));
+        commands
+            .entity(entity)
+            .remove::<Attacking>()
+            .insert((
+                enemy.walk_animation_config(),
+                Sprite {
+                    image: asset_server.load(enemy.walk_sprites()),
+                    texture_atlas: Some(enemy.walk_layout(&mut texture_atlas_layouts)),
+                    ..Default::default()
+                },
+            ))
+            .despawn_descendants();
     }
 }

@@ -8,13 +8,14 @@ use crate::{
     tower::place_tower,
 };
 
-use super::attacking::Attacking;
+use super::attack::Attacking;
 
 pub struct PathfindingPlugin;
 
 impl Plugin for PathfindingPlugin {
     fn build(&self, app: &mut App) {
         app.register_type::<EnemyPath>()
+            .register_type::<CurrentIsLastStep>()
             .add_event::<PathChangedEvent>()
             .add_systems(
                 Update,
@@ -41,6 +42,12 @@ impl EnemyPath {
         Self { steps, next: None }
     }
 }
+
+#[derive(Reflect, Component)]
+#[reflect(Component)]
+/// Marker component used to prevent Entities from getting their EnemyPath component removed while
+/// they already are on their target tile (which makes them stuck and unable to pathfind to the end)
+struct CurrentIsLastStep;
 
 #[derive(Event)]
 pub struct PathChangedEvent {
@@ -117,7 +124,6 @@ fn try_get_target(
     None
 }
 
-#[allow(clippy::type_complexity)]
 fn enemy_get_path(
     mut commands: Commands,
     enemies: Query<(&Enemy, Entity), (Without<EnemyPath>, Without<Attacking>)>,
@@ -149,7 +155,7 @@ fn enemy_get_path(
 fn check_for_broken_paths(
     mut events: EventReader<PathChangedEvent>,
     mut commands: Commands,
-    enemies: Query<(&EnemyPath, Entity), With<Enemy>>,
+    enemies: Query<(&EnemyPath, Entity), (With<Enemy>, Without<CurrentIsLastStep>)>,
 ) {
     let mut freed_tiles: Vec<&GridPos> = vec![];
     let mut blocked_tiles: Vec<&GridPos> = vec![];
@@ -165,7 +171,8 @@ fn check_for_broken_paths(
             commands
                 .entity(entity)
                 .remove::<EnemyPath>()
-                .remove::<Attacking>();
+                .remove::<Attacking>()
+                .despawn_descendants();
         }
         return;
     }
@@ -220,17 +227,30 @@ pub fn move_enemies(
                         if orientation != enemy.orientation {
                             enemy.orientation = orientation;
                         }
-                        commands.entity(entity).remove::<EnemyPath>().insert((
-                            Attacking::new(*tower_entity),
-                            enemy.attack_animation_config(),
-                            Sprite {
-                                image: asset_server.load(enemy.attack_sprites()),
-                                texture_atlas: Some(
-                                    enemy.attack_layout(&mut texture_atlas_layouts),
-                                ),
-                                ..Default::default()
-                            },
-                        ));
+                        commands
+                            .entity(entity)
+                            .remove::<EnemyPath>()
+                            .insert((
+                                Attacking::new(*tower_entity),
+                                enemy.attack_animation_config(),
+                                Sprite {
+                                    image: asset_server.load(enemy.attack_sprites()),
+                                    texture_atlas: Some(
+                                        enemy.attack_layout(&mut texture_atlas_layouts),
+                                    ),
+                                    ..Default::default()
+                                },
+                            ))
+                            .with_child((
+                                enemy.attack_animation_config(),
+                                Sprite {
+                                    image: asset_server.load(enemy.weapon_sprites()),
+                                    texture_atlas: Some(
+                                        enemy.attack_layout(&mut texture_atlas_layouts),
+                                    ),
+                                    ..Default::default()
+                                },
+                            ));
                         return;
                     }
 
@@ -244,6 +264,11 @@ pub fn move_enemies(
                     enemy.current = tile;
                     let next = grid_to_world_coords(tile).extend(2.) + enemy.offset();
                     path.next = Some(next);
+
+                    if path.steps.is_empty() {
+                        commands.entity(entity).insert(CurrentIsLastStep);
+                    }
+
                     next
                 } else {
                     commands.entity(entity).despawn();

@@ -17,18 +17,13 @@ pub struct GridPlugin;
 
 impl Plugin for GridPlugin {
     fn build(&self, app: &mut App) {
-        app.insert_resource(Grid {
-            tower: HashMap::new(),
-            tower_origins: HashMap::new(),
-            enemy_spawn: HashMap::new(),
-            enemy_goal: HashMap::new(),
-        });
+        app.insert_resource(Grid::default());
         app.register_type::<Grid>();
         app.add_systems(Startup, spawn_grid);
     }
 }
 
-#[derive(Reflect, Resource)]
+#[derive(Reflect, Resource, Default)]
 #[reflect(Resource)]
 pub struct Grid {
     /// contains all tiles occupied by a tower

@@ -94,13 +94,14 @@ fn spawn_enemy_spawners(
     let goal = grid.enemy_goal.iter().next().unwrap().0;
 
     while origin_tiles.len() != 5 {
-        let [row, col] = [rng.0.isize(0..(ROWS - 1)), rng.0.isize(0..(COLUMNS - 1))];
+        let [row, col] = [rng.isize(0..(ROWS - 1)), rng.isize(0..(COLUMNS - 1))];
 
         let spawner = EnemySpawn::new(EnemySpawnType::RedTower, GridPos::new(row, col));
         let other = spawner.other_tiles();
 
         if goal.distance_to(&spawner.pos) >= 20
             && !other.iter().any(|pos| other_tiles.contains(pos))
+            && !other_tiles.contains(&spawner.pos)
         {
             origin_tiles.insert(GridPos::new(row, col), spawner);
             other_tiles.extend(other);

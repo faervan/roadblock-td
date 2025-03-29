@@ -21,9 +21,6 @@ impl Plugin for UIPlugin {
     }
 }
 
-type ButtonQueryData<'a, T> = (&'a Interaction, &'a T, &'a mut BackgroundColor);
-type ButtonQueryFilter = (Changed<Interaction>, With<Button>);
-
 #[derive(Reflect, Component)]
 struct TowerButton(TowerType);
 
@@ -76,7 +73,10 @@ fn init_ui(mut commands: Commands) {
 }
 
 fn handle_buttons(
-    mut button: Query<ButtonQueryData<TowerButton>, ButtonQueryFilter>,
+    mut button: Query<
+        (&Interaction, &TowerButton, &mut BackgroundColor),
+        (Changed<Interaction>, With<Button>),
+    >,
     mut selection: ResMut<SelectedTower>,
     mut next_state: ResMut<NextState<TowerPlaceState>>,
 ) {

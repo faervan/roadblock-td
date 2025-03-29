@@ -1,4 +1,4 @@
-use attacking::EnemyAttackPlugin;
+use attack::EnemyAttackPlugin;
 use bevy::{input::common_conditions::input_just_pressed, prelude::*, window::PrimaryWindow};
 use goal::EnemyGoalPlugin;
 pub use path_finding::PathChangedEvent;
@@ -11,7 +11,7 @@ use crate::{
     grid::{Grid, GridPos, grid_to_world_coords, world_to_grid_coords},
 };
 
-mod attacking;
+mod attack;
 mod goal;
 mod path_finding;
 mod spawner;
@@ -82,7 +82,7 @@ impl Enemy {
         }
     }
 
-    fn _weapon_sprites(&self) -> &str {
+    fn weapon_sprites(&self) -> &str {
         match self.variant {
             EnemyType::Skeleton => "sprites/enemies/WEAPON_dagger.png",
         }

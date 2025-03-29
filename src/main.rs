@@ -66,7 +66,7 @@ fn main() {
     app.run();
 }
 
-#[derive(Resource)]
+#[derive(Resource, Deref, DerefMut)]
 struct RngResource(Rng);
 
 #[derive(Reflect, Default, PartialEq, Debug, Clone, Copy)]
