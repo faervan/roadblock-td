@@ -67,7 +67,7 @@ fn main() {
 #[derive(Resource)]
 struct RngResource(Rng);
 
-#[derive(Reflect, Default, PartialEq, Debug)]
+#[derive(Reflect, Default, PartialEq, Debug, Clone, Copy)]
 enum Orientation {
     #[default]
     Up,

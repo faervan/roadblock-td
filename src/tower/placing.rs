@@ -73,16 +73,7 @@ pub fn place_tower(
         let world_pos = camera.viewport_to_world_2d(cam_transform, mouse_pos);
         if let Ok(world_pos) = world_pos {
             if let Some(grid_pos) = world_to_grid_coords(world_pos) {
-                let grid_pos = match tower.orientation {
-                    Orientation::Up | Orientation::Down => GridPos {
-                        col: grid_pos.col - tower.tower.offset().0,
-                        row: grid_pos.row - tower.tower.offset().1,
-                    },
-                    Orientation::Left | Orientation::Right => GridPos {
-                        col: grid_pos.col - tower.tower.offset().1,
-                        row: grid_pos.row - tower.tower.offset().0,
-                    },
-                };
+                let grid_pos = apply_offset(grid_pos, tower.orientation, tower.tower);
 
                 // Flip Dimensions of the tower in case of rotation
                 let tower_size = match tower.orientation {
@@ -196,16 +187,7 @@ fn update_preview(
         let world_pos = camera.viewport_to_world_2d(cam_transform, mouse_pos);
         if let Ok(world_pos) = world_pos {
             if let Some(grid_pos) = world_to_grid_coords(world_pos) {
-                let grid_pos = match selection.orientation {
-                    Orientation::Up | Orientation::Down => GridPos {
-                        col: grid_pos.col - selection.tower.offset().0,
-                        row: grid_pos.row - selection.tower.offset().1,
-                    },
-                    Orientation::Left | Orientation::Right => GridPos {
-                        col: grid_pos.col - selection.tower.offset().1,
-                        row: grid_pos.row - selection.tower.offset().0,
-                    },
-                };
+                let grid_pos = apply_offset(grid_pos, selection.orientation, selection.tower);
 
                 // Flip Dimensions of the tower in case of rotation
                 let tower_size = match selection.orientation {
@@ -250,5 +232,26 @@ fn update_preview(
         } else {
             warn!("Unable to get Cursor Position {:?}", world_pos.unwrap_err())
         }
+    }
+}
+
+fn apply_offset(grid_pos: GridPos, orientation: Orientation, tower: Tower) -> GridPos {
+    match orientation {
+        Orientation::Up => GridPos {
+            col: grid_pos.col - tower.offset().0,
+            row: grid_pos.row - tower.offset().1,
+        },
+        Orientation::Down => GridPos {
+            col: grid_pos.col - (tower.size().0 - 1 - tower.offset().0),
+            row: grid_pos.row - (tower.size().1 - 1 - tower.offset().1),
+        },
+        Orientation::Left => GridPos {
+            col: grid_pos.col - tower.offset().1,
+            row: grid_pos.row - tower.offset().0,
+        },
+        Orientation::Right => GridPos {
+            col: grid_pos.col - (tower.size().1 - 1 - tower.offset().1),
+            row: grid_pos.row - (tower.size().0 - 1 - tower.offset().0),
+        },
     }
 }
