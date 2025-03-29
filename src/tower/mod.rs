@@ -3,6 +3,7 @@ use std::{
     time::Duration,
 };
 
+use attack::TowerAttackPlugin;
 use bevy::prelude::*;
 use placing::TowerPlacingPlugin;
 
@@ -13,6 +14,7 @@ use crate::{
     grid::{Grid, GridPos, TILE_SIZE},
 };
 
+mod attack;
 mod placing;
 
 pub struct TowerPlugin;
@@ -21,15 +23,16 @@ impl Plugin for TowerPlugin {
     fn build(&self, app: &mut App) {
         app.init_state::<TowerPlaceState>();
         app.register_type::<Tower>();
-        app.add_plugins(TowerPlacingPlugin);
+        app.add_plugins((TowerPlacingPlugin, TowerAttackPlugin));
     }
 }
 
-#[derive(Reflect, Component, Clone, Copy)]
+#[derive(Reflect, Component, Clone)]
 #[reflect(Component)]
 pub struct Tower {
     pub variant: TowerType,
-    orientation: Orientation,
+    attack_timer: Timer,
+    pub orientation: Orientation,
 }
 
 #[derive(Reflect, Clone, Copy)]
@@ -44,6 +47,7 @@ impl Tower {
         Self {
             variant,
             orientation,
+            attack_timer: Timer::new(variant.fire_cooldown(), TimerMode::Once),
         }
     }
 
@@ -86,14 +90,6 @@ impl Tower {
             false => size,
         }
     }
-
-    fn offset(&self) -> (isize, isize) {
-        match self.variant {
-            TowerType::Wall => (1, 0),
-            TowerType::SpikedWall => (1, 0),
-            TowerType::Canon => (1, 1),
-        }
-    }
 }
 
 impl TowerType {
@@ -114,28 +110,36 @@ impl TowerType {
         }
     }
 
-    fn _range(&self) -> f32 {
+    fn offset(&self) -> (isize, isize) {
+        match self {
+            TowerType::Wall => (1, 0),
+            TowerType::SpikedWall => (1, 0),
+            TowerType::Canon => (1, 1),
+        }
+    }
+
+    fn range(&self) -> f32 {
         match self {
             TowerType::Canon => TILE_SIZE * 10.0,
             _ => 0.0,
         }
     }
 
-    fn _strength(&self) -> u32 {
+    fn strength(&self) -> isize {
         match self {
             TowerType::Canon => 15,
             _ => 0,
         }
     }
 
-    fn _fire_cooldown(&self) -> Duration {
+    fn fire_cooldown(&self) -> Duration {
         match self {
             TowerType::Canon => Duration::from_secs(1),
             _ => Duration::ZERO,
         }
     }
 
-    fn _contact_damage(&self) -> u32 {
+    fn _contact_damage(&self) -> isize {
         match self {
             TowerType::SpikedWall => 5,
             _ => 0,

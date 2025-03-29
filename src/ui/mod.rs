@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 
-use crate::tower::{SelectedTower, TowerPlaceState, TowerType};
+use crate::tower::{SelectedTower, Tower, TowerPlaceState, TowerType};
 
 // I would have automated this but I don't think it is possible :/
 const TYPES: [TowerType; 3] = [TowerType::Wall, TowerType::SpikedWall, TowerType::Canon];
@@ -85,7 +85,7 @@ fn handle_buttons(
             Interaction::Hovered => *color = BackgroundColor(BUTTON_HOVER_COLOR),
             Interaction::Pressed => {
                 *color = BackgroundColor(BUTTON_PRESS_COLOR);
-                selection.variant = tower.0;
+                selection.0 = Tower::new(tower.0, selection.orientation);
                 next_state.set(TowerPlaceState::Active);
             }
             _ => *color = BackgroundColor(BUTTON_COLOR),
