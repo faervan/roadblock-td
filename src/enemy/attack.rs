@@ -23,10 +23,10 @@ pub struct Attacking {
 }
 
 impl Attacking {
-    pub fn new(target: Entity) -> Self {
+    pub fn new(target: Entity, cooldown: f32) -> Self {
         Self {
             target,
-            timer: Timer::new(Duration::from_secs(1), TimerMode::Repeating),
+            timer: Timer::new(Duration::from_secs_f32(cooldown), TimerMode::Repeating),
         }
     }
 }

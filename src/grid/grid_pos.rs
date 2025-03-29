@@ -59,18 +59,22 @@ impl GridPos {
         other.row.abs_diff(self.row) + other.col.abs_diff(self.col)
     }
 
+    /// * `towers` - Every tower position mapped to its Entity and travel cost
     pub fn neighbors<'a>(
         &'a self,
-        blocked: &'a HashMap<GridPos, Entity>,
-    ) -> Vec<(GridPos, Option<&'a Entity>)> {
+        towers: &'a HashMap<GridPos, (Entity, usize)>,
+        default_travel_cost: usize,
+    ) -> Vec<(GridPos, Option<&'a Entity>, usize)> {
         let mut neighbors = vec![];
 
         let mut push_maybe = |row, col| {
             if (0..ROWS).contains(&row) && (0..COLUMNS).contains(&col) {
                 let tile = GridPos::new(row, col);
-                match blocked.get(&tile) {
-                    Some(entity) => neighbors.push((tile, Some(entity))),
-                    None => neighbors.push((tile, None)),
+                match towers.get(&tile) {
+                    Some((entity, travel_cost)) => {
+                        neighbors.push((tile, Some(entity), *travel_cost))
+                    }
+                    None => neighbors.push((tile, None, default_travel_cost)),
                 }
             }
         };

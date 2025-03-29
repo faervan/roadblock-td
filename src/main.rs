@@ -87,6 +87,6 @@ impl Orientation {
     }
 }
 
-#[derive(Component, Reflect)]
+#[derive(Component, Reflect, Deref, DerefMut)]
 #[reflect(Component)]
 struct Health(isize);

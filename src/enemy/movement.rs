@@ -1,18 +1,18 @@
 use bevy::{prelude::*, utils::HashMap};
 
 use crate::{
-    Orientation,
+    Health, Orientation,
     animation::AnimationConfig,
     enemy::Enemy,
-    grid::{Grid, GridPos, grid_to_world_coords},
-    tower::place_tower,
+    grid::{Grid, GridPos, TILE_SIZE, grid_to_world_coords},
+    tower::{Tower, place_tower},
 };
 
 use super::attack::Attacking;
 
-pub struct PathfindingPlugin;
+pub struct EnemyMovementPlugin;
 
-impl Plugin for PathfindingPlugin {
+impl Plugin for EnemyMovementPlugin {
     fn build(&self, app: &mut App) {
         app.register_type::<EnemyPath>()
             .register_type::<CurrentIsLastStep>()
@@ -72,13 +72,15 @@ impl PathChangedEvent {
 }
 
 fn try_get_target(
-    tiles: &HashMap<GridPos, Entity>,
+    tiles: &HashMap<GridPos, (Entity, usize)>,
     enemy: &Enemy,
 ) -> Option<HashMap<GridPos, GridPos>> {
     let distance = enemy.current.distance_to(&enemy.goal);
+    let default_travel_cost = (enemy.velocity() / TILE_SIZE) as usize;
+
     // This is the A* algorithm, see https://www.youtube.com/watch?v=-L-WgKMFuhE
 
-    // open contains f_cost, g_cost, parent, tower_entity and travel_cost of every tile
+    // open contains f_cost, g_cost, parent and tower_entity of every tile
     let mut open: HashMap<GridPos, (usize, usize, GridPos, Option<Entity>)> =
         HashMap::from([(enemy.current, (distance, 0, enemy.current, None))]);
     let mut closed: HashMap<GridPos, GridPos> = HashMap::new();
@@ -95,15 +97,15 @@ fn try_get_target(
             return Some(closed);
         }
 
-        for (neighbor, nb_tower_entity) in tile.neighbors(tiles) {
+        for (neighbor, nb_tower_entity, travel_cost) in tile.neighbors(tiles, default_travel_cost) {
             if closed.contains_key(&neighbor) {
                 continue;
             }
             let new_nb_g_cost = g_cost
                 + if tower_entity.as_ref() == nb_tower_entity {
-                    1
+                    default_travel_cost
                 } else {
-                    10
+                    travel_cost
                 };
             if open
                 .get(&neighbor)
@@ -127,6 +129,7 @@ fn try_get_target(
 fn enemy_get_path(
     mut commands: Commands,
     enemies: Query<(&Enemy, Entity), (Without<EnemyPath>, Without<Attacking>)>,
+    towers: Query<&Health, With<Tower>>,
     grid: Res<Grid>,
 ) {
     let get_path = |closed: HashMap<GridPos, GridPos>, enemy: &Enemy| {
@@ -139,7 +142,19 @@ fn enemy_get_path(
         path
     };
     for (enemy, entity) in &enemies {
-        if let Some(closed) = try_get_target(&grid.tower, enemy) {
+        if let Some(closed) = try_get_target(
+            &grid
+                .tower
+                .iter()
+                .filter_map(|(pos, id)| {
+                    towers
+                        .get(*id)
+                        .map(|hp| (*pos, (*id, enemy.travel_cost(**hp))))
+                        .ok()
+                })
+                .collect(),
+            enemy,
+        ) {
             let path = get_path(closed, enemy);
             if !path.is_empty() {
                 commands.entity(entity).insert(EnemyPath::new(path));
@@ -231,7 +246,7 @@ pub fn move_enemies(
                             .entity(entity)
                             .remove::<EnemyPath>()
                             .insert((
-                                Attacking::new(*tower_entity),
+                                Attacking::new(*tower_entity, enemy.attack_cooldown()),
                                 enemy.attack_animation_config(),
                                 Sprite {
                                     image: asset_server.load(enemy.attack_sprites()),
@@ -277,7 +292,7 @@ pub fn move_enemies(
             }
         };
         let direction = next - pos.translation;
-        pos.translation += direction.normalize() * time.delta_secs() * 150.;
+        pos.translation += direction.normalize() * time.delta_secs() * enemy.velocity();
         if pos.translation.distance(next) >= direction.length() {
             path.next = None;
         }

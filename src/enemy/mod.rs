@@ -1,8 +1,8 @@
 use attack::EnemyAttackPlugin;
 use bevy::{input::common_conditions::input_just_pressed, prelude::*, window::PrimaryWindow};
 use goal::EnemyGoalPlugin;
-pub use path_finding::PathChangedEvent;
-use path_finding::PathfindingPlugin;
+use movement::EnemyMovementPlugin;
+pub use movement::PathChangedEvent;
 use spawner::EnemySpawnerPlugin;
 
 use crate::{
@@ -13,7 +13,7 @@ use crate::{
 
 mod attack;
 mod goal;
-mod path_finding;
+mod movement;
 mod spawner;
 
 pub struct EnemyPlugin;
@@ -22,7 +22,7 @@ impl Plugin for EnemyPlugin {
     fn build(&self, app: &mut App) {
         app.register_type::<Enemy>()
             .add_plugins((
-                PathfindingPlugin,
+                EnemyMovementPlugin,
                 EnemySpawnerPlugin,
                 EnemyGoalPlugin,
                 EnemyAttackPlugin,
@@ -34,17 +34,18 @@ impl Plugin for EnemyPlugin {
     }
 }
 
-#[derive(Reflect, Component)]
+#[derive(Reflect, Component, Deref, DerefMut)]
 #[reflect(Component)]
 pub struct Enemy {
     pub current: GridPos,
     pub goal: GridPos,
+    #[deref]
     variant: EnemyType,
     orientation: Orientation,
 }
 
 #[derive(Reflect)]
-enum EnemyType {
+pub enum EnemyType {
     Skeleton,
 }
 
@@ -55,36 +56,6 @@ impl Enemy {
             goal,
             variant,
             orientation: Orientation::default(),
-        }
-    }
-
-    fn max_hp(&self) -> isize {
-        match self.variant {
-            EnemyType::Skeleton => 25,
-        }
-    }
-
-    fn damage(&self) -> isize {
-        match self.variant {
-            EnemyType::Skeleton => 20,
-        }
-    }
-
-    fn walk_sprites(&self) -> &str {
-        match self.variant {
-            EnemyType::Skeleton => "sprites/enemies/BODY_skeleton_walk.png",
-        }
-    }
-
-    fn attack_sprites(&self) -> &str {
-        match self.variant {
-            EnemyType::Skeleton => "sprites/enemies/BODY_skeleton_attack.png",
-        }
-    }
-
-    fn weapon_sprites(&self) -> &str {
-        match self.variant {
-            EnemyType::Skeleton => "sprites/enemies/WEAPON_dagger.png",
         }
     }
 
@@ -115,18 +86,6 @@ impl Enemy {
                 )),
                 index: self.attack_sprite_indices().0,
             },
-        }
-    }
-
-    fn offset(&self) -> Vec3 {
-        match self.variant {
-            EnemyType::Skeleton => Vec3::new(0., 10., 0.),
-        }
-    }
-
-    fn scale(&self) -> Vec3 {
-        match self.variant {
-            EnemyType::Skeleton => Vec3::splat(0.6),
         }
     }
 
@@ -169,6 +128,67 @@ impl Enemy {
                 Orientation::Left => (6, 11),
                 Orientation::Right => (18, 23),
             },
+        }
+    }
+}
+
+impl EnemyType {
+    fn max_hp(&self) -> isize {
+        match self {
+            EnemyType::Skeleton => 25,
+        }
+    }
+
+    fn damage(&self) -> isize {
+        match self {
+            EnemyType::Skeleton => 20,
+        }
+    }
+
+    /// Cooldown between attacks in seconds
+    fn attack_cooldown(&self) -> f32 {
+        match self {
+            EnemyType::Skeleton => 1.,
+        }
+    }
+
+    fn travel_cost(&self, tower_hp: isize) -> usize {
+        (tower_hp as f32 * self.attack_cooldown() / self.damage() as f32) as usize * 10
+    }
+
+    fn velocity(&self) -> f32 {
+        match self {
+            EnemyType::Skeleton => 150.,
+        }
+    }
+
+    fn walk_sprites(&self) -> &str {
+        match self {
+            EnemyType::Skeleton => "sprites/enemies/BODY_skeleton_walk.png",
+        }
+    }
+
+    fn attack_sprites(&self) -> &str {
+        match self {
+            EnemyType::Skeleton => "sprites/enemies/BODY_skeleton_attack.png",
+        }
+    }
+
+    fn weapon_sprites(&self) -> &str {
+        match self {
+            EnemyType::Skeleton => "sprites/enemies/WEAPON_dagger.png",
+        }
+    }
+
+    fn offset(&self) -> Vec3 {
+        match self {
+            EnemyType::Skeleton => Vec3::new(0., 10., 0.),
+        }
+    }
+
+    fn scale(&self) -> Vec3 {
+        match self {
+            EnemyType::Skeleton => Vec3::splat(0.6),
         }
     }
 }
