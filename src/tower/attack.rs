@@ -1,6 +1,6 @@
 use bevy::{color::palettes::css::RED, prelude::*};
 
-use crate::enemy::Enemy;
+use crate::{enemy::Enemy, grid::TILE_SIZE};
 
 use super::Tower;
 
@@ -67,8 +67,12 @@ fn shoot(
                 Transform {
                     translation: Vec3 {
                         //will need to handle the rotation here at some point but I am lazy and the only attacking tower we have rn is symmetrical
-                        x: tower_transform.translation.x + tower.offset().0 as f32,
-                        y: tower_transform.translation.y + tower.offset().1 as f32,
+                        x: tower_transform.translation.x
+                            + tower.offset().0 as f32 * TILE_SIZE
+                            + TILE_SIZE * 0.5,
+                        y: tower_transform.translation.y
+                            + tower.offset().1 as f32 * TILE_SIZE
+                            + TILE_SIZE * 0.5,
                         z: 3.0,
                     },
                     ..default()
