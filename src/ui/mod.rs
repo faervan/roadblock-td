@@ -1,9 +1,9 @@
 use bevy::prelude::*;
 
-use crate::tower::{SelectedTower, Tower, TowerPlaceState};
+use crate::tower::{SelectedTower, TowerPlaceState, TowerType};
 
 // I would have automated this but I don't think it is possible :/
-const TYPES: [Tower; 3] = [Tower::Wall, Tower::SpikedWall, Tower::Canon];
+const TYPES: [TowerType; 3] = [TowerType::Wall, TowerType::SpikedWall, TowerType::Canon];
 const TILE_SIZE_PX: f32 = 30.0;
 
 const BACKGROUND_COLOR: Color = Color::srgba(0.0, 0.0, 0.0, 0.5);
@@ -25,7 +25,7 @@ type ButtonQueryData<'a, T> = (&'a Interaction, &'a T, &'a mut BackgroundColor);
 type ButtonQueryFilter = (Changed<Interaction>, With<Button>);
 
 #[derive(Reflect, Component)]
-struct TowerButton(Tower);
+struct TowerButton(TowerType);
 
 fn init_ui(mut commands: Commands) {
     commands
@@ -85,7 +85,7 @@ fn handle_buttons(
             Interaction::Hovered => *color = BackgroundColor(BUTTON_HOVER_COLOR),
             Interaction::Pressed => {
                 *color = BackgroundColor(BUTTON_PRESS_COLOR);
-                selection.tower = tower.0;
+                selection.variant = tower.0;
                 next_state.set(TowerPlaceState::Active);
             }
             _ => *color = BackgroundColor(BUTTON_COLOR),

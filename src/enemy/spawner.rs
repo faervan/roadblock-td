@@ -150,8 +150,8 @@ fn spawn_enemies(
 
         commands.spawn((
             Sprite {
-                image: asset_server.load(enemy.sprite_sheet()),
-                texture_atlas: Some(enemy.layout(&mut texture_atlas_layouts)),
+                image: asset_server.load(enemy.walk_sprites()),
+                texture_atlas: Some(enemy.walk_layout(&mut texture_atlas_layouts)),
                 ..Default::default()
             },
             Transform {
@@ -159,7 +159,7 @@ fn spawn_enemies(
                 scale: enemy.scale(),
                 ..default()
             },
-            enemy.animation_config(),
+            enemy.walk_animation_config(),
             enemy,
         ));
     }

@@ -1,22 +1,21 @@
+use std::ops::{Deref, DerefMut};
+
 use bevy::{input::common_conditions::input_just_pressed, prelude::*, window::PrimaryWindow};
 
 use crate::{
-    Orientation,
+    Health, Orientation,
     enemy::PathChangedEvent,
     grid::{COLUMNS, Grid, GridPos, ROWS, TILE_SIZE, grid_to_world_coords, world_to_grid_coords},
 };
 
-use super::Tower;
+use super::{Tower, TowerType};
 
 pub struct TowerPlacingPlugin;
 
 impl Plugin for TowerPlacingPlugin {
     fn build(&self, app: &mut App) {
         app.register_type::<TowerPreview>()
-            .insert_resource(SelectedTower {
-                tower: Tower::Wall,
-                orientation: Orientation::Up,
-            })
+            .insert_resource(SelectedTower(Tower::new(TowerType::Wall, Orientation::Up)))
             .add_systems(OnEnter(TowerPlaceState::Active), spawn_preview)
             .add_systems(OnExit(TowerPlaceState::Active), despawn_preview)
             .add_systems(
@@ -45,16 +44,24 @@ fn exit_tower_place_state(mut next_state: ResMut<NextState<TowerPlaceState>>) {
 
 #[derive(Reflect, Resource)]
 #[reflect(Resource)]
-pub struct SelectedTower {
-    pub tower: Tower,
-    orientation: Orientation,
+pub struct SelectedTower(Tower);
+
+impl Deref for SelectedTower {
+    type Target = Tower;
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+impl DerefMut for SelectedTower {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
+    }
 }
 
 #[derive(Reflect, Component)]
 #[reflect(Component)]
 struct TowerPreview;
 
-#[allow(clippy::too_many_arguments)]
 pub fn place_tower(
     mut commands: Commands,
     mut event_writer: EventWriter<PathChangedEvent>,
@@ -73,15 +80,9 @@ pub fn place_tower(
         let world_pos = camera.viewport_to_world_2d(cam_transform, mouse_pos);
         if let Ok(world_pos) = world_pos {
             if let Some(grid_pos) = world_to_grid_coords(world_pos) {
-                let grid_pos = apply_offset(grid_pos, tower.orientation, tower.tower);
+                let grid_pos = apply_offset(grid_pos, tower.orientation, tower.0);
 
-                // Flip Dimensions of the tower in case of rotation
-                let tower_size = match tower.orientation {
-                    Orientation::Up | Orientation::Down => tower.tower.size(),
-                    Orientation::Left | Orientation::Right => {
-                        (tower.tower.size().1, tower.tower.size().0)
-                    }
-                };
+                let tower_size = tower.size();
 
                 // Check if tiles are free
                 for i in 0..tower_size.0 {
@@ -103,7 +104,8 @@ pub fn place_tower(
 
                 let entity = commands
                     .spawn((
-                        tower.tower,
+                        Health(tower.max_hp()),
+                        tower.0,
                         Sprite {
                             color: Color::srgb(0.0, 0.5, 1.0),
                             custom_size: Some(Vec2 {
@@ -121,19 +123,9 @@ pub fn place_tower(
                     ))
                     .id();
 
-                let mut blocked = vec![];
-                // Add entity to every coordinate it covers
-                for i in 0..tower_size.0 {
-                    for j in 0..tower_size.1 {
-                        let pos = GridPos {
-                            col: grid_pos.col + i,
-                            row: grid_pos.row + j,
-                        };
-                        blocked.push(pos);
-                        grid.tower.insert(pos, entity);
-                    }
-                }
-                event_writer.send(PathChangedEvent::now_blocked(blocked));
+                event_writer.send(PathChangedEvent::now_blocked(
+                    tower.fill_grid(&grid_pos, &mut grid, entity),
+                ));
 
                 if !input.pressed(KeyCode::ShiftLeft) {
                     next_state.set(TowerPlaceState::Inactive);
@@ -174,7 +166,7 @@ fn update_preview(
     window: Single<&Window, With<PrimaryWindow>>,
     cam: Single<(&Camera, &GlobalTransform)>,
     grid: ResMut<Grid>,
-    selection: Res<SelectedTower>,
+    tower: Res<SelectedTower>,
     mut preview: Query<(&mut Sprite, &mut Transform, &mut Visibility), With<TowerPreview>>,
 ) {
     let (mut sprite, mut transform, mut visibility) = preview.single_mut();
@@ -187,15 +179,9 @@ fn update_preview(
         let world_pos = camera.viewport_to_world_2d(cam_transform, mouse_pos);
         if let Ok(world_pos) = world_pos {
             if let Some(grid_pos) = world_to_grid_coords(world_pos) {
-                let grid_pos = apply_offset(grid_pos, selection.orientation, selection.tower);
+                let grid_pos = apply_offset(grid_pos, tower.orientation, tower.0);
 
-                // Flip Dimensions of the tower in case of rotation
-                let tower_size = match selection.orientation {
-                    Orientation::Up | Orientation::Down => selection.tower.size(),
-                    Orientation::Left | Orientation::Right => {
-                        (selection.tower.size().1, selection.tower.size().0)
-                    }
-                };
+                let tower_size = tower.size();
 
                 sprite.color = Color::srgb(0.0, 0.5, 1.0);
 

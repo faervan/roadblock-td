@@ -3,7 +3,7 @@ use std::{
     ops::Add,
 };
 
-use bevy::{prelude::*, utils::HashSet};
+use bevy::{prelude::*, utils::HashMap};
 
 use super::{COLUMNS, ROWS};
 
@@ -59,13 +59,19 @@ impl GridPos {
         other.row.abs_diff(self.row) + other.col.abs_diff(self.col)
     }
 
-    pub fn neighbors(&self, blocked: &HashSet<&GridPos>) -> Vec<GridPos> {
+    pub fn neighbors<'a>(
+        &'a self,
+        blocked: &'a HashMap<GridPos, Entity>,
+    ) -> Vec<(GridPos, Option<&'a Entity>)> {
         let mut neighbors = vec![];
 
         let mut push_maybe = |row, col| {
             if (0..ROWS).contains(&row) && (0..COLUMNS).contains(&col) {
                 let tile = GridPos::new(row, col);
-                (!blocked.contains(&tile)).then(|| neighbors.push(tile));
+                match blocked.get(&tile) {
+                    Some(entity) => neighbors.push((tile, Some(entity))),
+                    None => neighbors.push((tile, None)),
+                }
             }
         };
 

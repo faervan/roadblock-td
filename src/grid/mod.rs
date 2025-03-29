@@ -1,6 +1,5 @@
 use bevy::prelude::*;
 use bevy::utils::HashMap;
-use bevy::{ecs::system::Resource, utils::HashSet};
 
 pub use grid_pos::GridPos;
 
@@ -20,6 +19,7 @@ impl Plugin for GridPlugin {
     fn build(&self, app: &mut App) {
         app.insert_resource(Grid {
             tower: HashMap::new(),
+            tower_origins: HashMap::new(),
             enemy_spawn: HashMap::new(),
             enemy_goal: HashMap::new(),
         });
@@ -31,7 +31,10 @@ impl Plugin for GridPlugin {
 #[derive(Reflect, Resource)]
 #[reflect(Resource)]
 pub struct Grid {
+    /// contains all tiles occupied by a tower
     pub tower: HashMap<GridPos, Entity>,
+    /// stores the origin tile of every tower entity
+    pub tower_origins: HashMap<Entity, GridPos>,
     pub enemy_spawn: HashMap<GridPos, Entity>,
     pub enemy_goal: HashMap<GridPos, Entity>,
 }
@@ -41,11 +44,6 @@ impl Grid {
         !self.tower.contains_key(position)
             && !self.enemy_spawn.contains_key(position)
             && !self.enemy_goal.contains_key(position)
-    }
-
-    /// All tiles not to be included in the enemys pathfinding
-    pub fn blocked_tiles(&self) -> HashSet<&GridPos> {
-        self.tower.iter().map(|(pos, _)| pos).collect()
     }
 }
 

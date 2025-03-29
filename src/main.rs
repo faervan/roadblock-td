@@ -51,6 +51,8 @@ fn main() {
         app.add_plugins(WorldInspectorPlugin::new());
     }
 
+    app.register_type::<Health>();
+
     app.insert_resource(RngResource(Rng::new()));
 
     app.add_plugins((
@@ -75,3 +77,16 @@ enum Orientation {
     Left,
     Right,
 }
+
+impl Orientation {
+    fn is_horizontal(&self) -> bool {
+        match self {
+            Orientation::Up | Orientation::Down => false,
+            Orientation::Left | Orientation::Right => true,
+        }
+    }
+}
+
+#[derive(Component, Reflect)]
+#[reflect(Component)]
+struct Health(isize);
