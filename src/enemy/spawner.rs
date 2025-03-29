@@ -6,7 +6,7 @@ use bevy::{
 };
 
 use crate::{
-    RngResource,
+    Health, RngResource,
     grid::{COLUMNS, Grid, GridPos, ROWS, grid_to_world_coords},
 };
 
@@ -149,6 +149,7 @@ fn spawn_enemies(
         );
 
         commands.spawn((
+            Health(enemy.max_hp()),
             Sprite {
                 image: asset_server.load(enemy.walk_sprites()),
                 texture_atlas: Some(enemy.walk_layout(&mut texture_atlas_layouts)),

@@ -58,6 +58,12 @@ impl Enemy {
         }
     }
 
+    fn max_hp(&self) -> isize {
+        match self.variant {
+            EnemyType::Skeleton => 25,
+        }
+    }
+
     fn damage(&self) -> isize {
         match self.variant {
             EnemyType::Skeleton => 20,
