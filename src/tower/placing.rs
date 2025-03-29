@@ -80,7 +80,7 @@ pub fn place_tower(
         let world_pos = camera.viewport_to_world_2d(cam_transform, mouse_pos);
         if let Ok(world_pos) = world_pos {
             if let Some(grid_pos) = world_to_grid_coords(world_pos) {
-                let grid_pos = apply_offset(grid_pos, tower.orientation, tower.0);
+                let grid_pos = apply_offset(grid_pos, tower.0);
 
                 let tower_size = tower.size();
 
@@ -179,7 +179,7 @@ fn update_preview(
         let world_pos = camera.viewport_to_world_2d(cam_transform, mouse_pos);
         if let Ok(world_pos) = world_pos {
             if let Some(grid_pos) = world_to_grid_coords(world_pos) {
-                let grid_pos = apply_offset(grid_pos, tower.orientation, tower.0);
+                let grid_pos = apply_offset(grid_pos, tower.0);
 
                 let tower_size = tower.size();
 
@@ -221,23 +221,23 @@ fn update_preview(
     }
 }
 
-fn apply_offset(grid_pos: GridPos, orientation: Orientation, tower: Tower) -> GridPos {
-    match orientation {
+fn apply_offset(grid_pos: GridPos, tower: Tower) -> GridPos {
+    match tower.orientation {
         Orientation::Up => GridPos {
             col: grid_pos.col - tower.offset().0,
             row: grid_pos.row - tower.offset().1,
         },
         Orientation::Down => GridPos {
-            col: grid_pos.col - (tower.size().0 - 1 - tower.offset().0),
-            row: grid_pos.row - (tower.size().1 - 1 - tower.offset().1),
+            col: grid_pos.col - (tower.variant.size().0 - 1 - tower.offset().0),
+            row: grid_pos.row - (tower.variant.size().1 - 1 - tower.offset().1),
         },
         Orientation::Left => GridPos {
             col: grid_pos.col - tower.offset().1,
             row: grid_pos.row - tower.offset().0,
         },
         Orientation::Right => GridPos {
-            col: grid_pos.col - (tower.size().1 - 1 - tower.offset().1),
-            row: grid_pos.row - (tower.size().0 - 1 - tower.offset().0),
+            col: grid_pos.col - (tower.variant.size().1 - 1 - tower.offset().1),
+            row: grid_pos.row - (tower.variant.size().0 - 1 - tower.offset().0),
         },
     }
 }
