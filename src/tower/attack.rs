@@ -1,6 +1,6 @@
 use bevy::{color::palettes::css::RED, prelude::*};
 
-use crate::{enemy::Enemy, grid::TILE_SIZE};
+use crate::{Health, enemy::Enemy, grid::TILE_SIZE};
 
 use super::Tower;
 
@@ -8,7 +8,7 @@ pub struct TowerAttackPlugin;
 
 impl Plugin for TowerAttackPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Update, (shoot, move_projectile));
+        app.add_systems(Update, (shoot, move_projectile, projectile_damage));
         app.register_type::<Projectile>();
     }
 }
@@ -94,8 +94,36 @@ fn move_projectile(
                 .translation
                 .move_towards(target.translation, projectile.speed * time.delta_secs());
         } else {
-            error!("target enemy no longer exists, despawning projectile");
-            commands.get_entity(entity).unwrap().despawn();
+            warn!("target enemy no longer exists, despawning projectile");
+            commands.get_entity(entity).unwrap().despawn_recursive();
+        }
+    }
+}
+
+fn projectile_damage(
+    mut commands: Commands,
+    projectile: Query<(&Transform, &Projectile, Entity)>,
+    mut enemy: Query<(&Transform, &mut Health, Entity), With<Enemy>>,
+) {
+    for (projectile_transform, projectile, projectile_entity) in projectile.iter() {
+        for (enemy_transform, mut health, enemy_entity) in enemy.iter_mut() {
+            if projectile_transform
+                .translation
+                .distance(enemy_transform.translation)
+                < TILE_SIZE * 0.5
+            {
+                health.0 -= projectile.damage;
+                if health.0 <= 0 {
+                    commands
+                        .get_entity(enemy_entity)
+                        .unwrap()
+                        .despawn_recursive();
+                }
+                commands
+                    .get_entity(projectile_entity)
+                    .unwrap()
+                    .despawn_recursive();
+            }
         }
     }
 }
