@@ -8,7 +8,7 @@ pub use movement::PathChangedEvent;
 use spawner::EnemySpawnerPlugin;
 
 use crate::{
-    Orientation,
+    Health, Orientation,
     animation::AnimationConfig,
     grid::{Grid, GridPos, grid_to_world_coords, world_to_grid_coords},
 };
@@ -218,6 +218,7 @@ fn spawn_enemies_manual(
                 if grid.is_free(&grid_pos) {
                     let enemy = Enemy::new(grid_pos, EnemyType::Skeleton);
                     commands.spawn((
+                        Health(enemy.max_hp()),
                         Sprite {
                             image: asset_server.load(enemy.walk_sprites()),
                             texture_atlas: Some(enemy.walk_layout(&mut texture_atlas_layouts)),
