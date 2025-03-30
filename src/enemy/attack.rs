@@ -1,5 +1,3 @@
-use std::time::Duration;
-
 use bevy::prelude::*;
 
 use crate::{Health, grid::Grid, tower::Tower};
@@ -10,50 +8,53 @@ pub struct EnemyAttackPlugin;
 
 impl Plugin for EnemyAttackPlugin {
     fn build(&self, app: &mut App) {
-        app.register_type::<Attacking>()
-            .add_systems(Update, enemy_attacking);
+        app.register_type::<Attacking>().add_systems(
+            Update,
+            (
+                advance_enemy_attack_timers,
+                enemy_attacking,
+                enemy_attacking_goal,
+            ),
+        );
     }
 }
 
-#[derive(Component, Reflect)]
+#[derive(Component, Reflect, Deref)]
 #[reflect(Component)]
-pub struct Attacking {
-    target: Entity,
-    timer: Timer,
-}
+pub struct Attacking(pub Entity);
 
-impl Attacking {
-    pub fn new(target: Entity, cooldown: f32) -> Self {
-        Self {
-            target,
-            timer: Timer::new(Duration::from_secs_f32(cooldown), TimerMode::Repeating),
-        }
+#[derive(Component, Reflect, Deref)]
+#[reflect(Component)]
+pub struct AttackingGoal(pub u8);
+
+fn advance_enemy_attack_timers(mut enemies: Query<&mut Enemy>, time: Res<Time>) {
+    for mut enemy in &mut enemies {
+        enemy.attack_timer.tick(time.delta());
     }
 }
 
 fn enemy_attacking(
-    mut enemies: Query<(&Enemy, &mut Attacking, Entity)>,
+    mut enemies: Query<(&mut Enemy, &Attacking, Entity)>,
     mut towers: Query<(&mut Health, &Tower)>,
     mut commands: Commands,
     mut grid: ResMut<Grid>,
-    time: Res<Time>,
     asset_server: Res<AssetServer>,
     mut texture_atlas_layouts: ResMut<Assets<TextureAtlasLayout>>,
     mut event_writer: EventWriter<PathChangedEvent>,
 ) {
-    for (enemy, mut attack, entity) in &mut enemies {
-        attack.timer.tick(time.delta());
-        if !attack.timer.just_finished() {
+    for (mut enemy, target, entity) in &mut enemies {
+        if !enemy.attack_timer.finished() {
             continue;
         }
+        enemy.attack_timer.reset();
 
-        if let Ok((mut health, tower)) = towers.get_mut(attack.target) {
+        if let Ok((mut health, tower)) = towers.get_mut(**target) {
             health.0 -= enemy.damage();
 
             if health.0 <= 0 {
-                commands.entity(attack.target).despawn_recursive();
+                commands.entity(**target).despawn_recursive();
                 event_writer.send(PathChangedEvent::now_free(
-                    tower.clear_grid(&mut grid, attack.target),
+                    tower.clear_grid(&mut grid, **target),
                 ));
             }
         }
@@ -70,5 +71,22 @@ fn enemy_attacking(
                 },
             ))
             .despawn_descendants();
+    }
+}
+
+fn enemy_attacking_goal(
+    mut enemies: Query<(&mut Enemy, &mut AttackingGoal, Entity)>,
+    mut commands: Commands,
+) {
+    for (mut enemy, mut attacks, entity) in &mut enemies {
+        if !enemy.attack_timer.finished() {
+            continue;
+        }
+        enemy.attack_timer.reset();
+
+        attacks.0 -= 1;
+        if **attacks == 0 {
+            commands.entity(entity).despawn_recursive();
+        }
     }
 }

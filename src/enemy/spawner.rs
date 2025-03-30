@@ -91,7 +91,6 @@ fn spawn_enemy_spawners(
 ) {
     let mut origin_tiles = HashMap::new();
     let mut other_tiles = HashSet::new();
-    let goal = grid.enemy_goal.iter().next().unwrap().0;
 
     while origin_tiles.len() != 5 {
         let [row, col] = [rng.isize(0..(ROWS - 1)), rng.isize(0..(COLUMNS - 1))];
@@ -99,7 +98,7 @@ fn spawn_enemy_spawners(
         let spawner = EnemySpawn::new(EnemySpawnType::RedTower, GridPos::new(row, col));
         let other = spawner.other_tiles();
 
-        if goal.distance_to(&spawner.pos) >= 20
+        if spawner.pos.distance_to_closest(&grid.enemy_goals) >= 20
             && !other.iter().any(|pos| other_tiles.contains(pos))
             && !other_tiles.contains(&spawner.pos)
         {
@@ -122,16 +121,15 @@ fn spawn_enemy_spawners(
             ))
             .id();
 
-        grid.enemy_spawn.insert(pos, entity);
+        grid.enemy_spawners.insert(pos, entity);
         for tile in other.into_iter() {
-            grid.enemy_spawn.insert(tile, entity);
+            grid.enemy_spawners.insert(tile, entity);
         }
     }
 }
 
 fn spawn_enemies(
     mut commands: Commands,
-    grid: Res<Grid>,
     time: Res<Time>,
     mut spawners: Query<&mut EnemySpawn>,
     asset_server: Res<AssetServer>,
@@ -143,11 +141,7 @@ fn spawn_enemies(
             continue;
         }
 
-        let enemy = Enemy::new(
-            spawner.pos,
-            *grid.enemy_goal.iter().next().unwrap().0,
-            EnemyType::Skeleton,
-        );
+        let enemy = Enemy::new(spawner.pos, EnemyType::Skeleton);
 
         commands.spawn((
             Health(enemy.max_hp()),

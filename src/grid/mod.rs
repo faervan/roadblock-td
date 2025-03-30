@@ -27,18 +27,18 @@ impl Plugin for GridPlugin {
 #[reflect(Resource)]
 pub struct Grid {
     /// contains all tiles occupied by a tower
-    pub tower: HashMap<GridPos, Entity>,
+    pub towers: HashMap<GridPos, Entity>,
     /// stores the origin tile of every tower entity
     pub tower_origins: HashMap<Entity, GridPos>,
-    pub enemy_spawn: HashMap<GridPos, Entity>,
-    pub enemy_goal: HashMap<GridPos, Entity>,
+    pub enemy_spawners: HashMap<GridPos, Entity>,
+    pub enemy_goals: HashMap<GridPos, Entity>,
 }
 
 impl Grid {
     pub fn is_free(&self, position: &GridPos) -> bool {
-        !self.tower.contains_key(position)
-            && !self.enemy_spawn.contains_key(position)
-            && !self.enemy_goal.contains_key(position)
+        !self.towers.contains_key(position)
+            && !self.enemy_spawners.contains_key(position)
+            && !self.enemy_goals.contains_key(position)
     }
 }
 

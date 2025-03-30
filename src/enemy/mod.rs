@@ -1,3 +1,5 @@
+use std::time::Duration;
+
 use attack::EnemyAttackPlugin;
 use bevy::{input::common_conditions::input_just_pressed, prelude::*, window::PrimaryWindow};
 use goal::EnemyGoalPlugin;
@@ -38,10 +40,10 @@ impl Plugin for EnemyPlugin {
 #[reflect(Component)]
 pub struct Enemy {
     pub current: GridPos,
-    pub goal: GridPos,
     #[deref]
     variant: EnemyType,
     orientation: Orientation,
+    attack_timer: Timer,
 }
 
 #[derive(Reflect)]
@@ -50,10 +52,13 @@ pub enum EnemyType {
 }
 
 impl Enemy {
-    fn new(current: GridPos, goal: GridPos, variant: EnemyType) -> Self {
+    fn new(current: GridPos, variant: EnemyType) -> Self {
         Self {
+            attack_timer: Timer::new(
+                Duration::from_secs_f32(variant.attack_cooldown()),
+                TimerMode::Once,
+            ),
             current,
-            goal,
             variant,
             orientation: Orientation::default(),
         }
@@ -141,7 +146,7 @@ impl EnemyType {
 
     fn damage(&self) -> isize {
         match self {
-            EnemyType::Skeleton => 20,
+            EnemyType::Skeleton => 8,
         }
     }
 
@@ -153,7 +158,7 @@ impl EnemyType {
     }
 
     fn travel_cost(&self, tower_hp: isize) -> usize {
-        (tower_hp as f32 * self.attack_cooldown() / self.damage() as f32) as usize * 10
+        (tower_hp as f32 * self.attack_cooldown() / self.damage() as f32) as usize * 20
     }
 
     fn velocity(&self) -> f32 {
@@ -211,11 +216,7 @@ fn spawn_enemies_manual(
         if let Ok(world_pos) = world_pos {
             if let Some(grid_pos) = world_to_grid_coords(world_pos) {
                 if grid.is_free(&grid_pos) {
-                    let enemy = Enemy::new(
-                        grid_pos,
-                        *grid.enemy_goal.iter().next().unwrap().0,
-                        EnemyType::Skeleton,
-                    );
+                    let enemy = Enemy::new(grid_pos, EnemyType::Skeleton);
                     commands.spawn((
                         Sprite {
                             image: asset_server.load(enemy.walk_sprites()),

@@ -8,14 +8,13 @@ use crate::{
     tower::{Tower, place_tower},
 };
 
-use super::attack::Attacking;
+use super::attack::{Attacking, AttackingGoal};
 
 pub struct EnemyMovementPlugin;
 
 impl Plugin for EnemyMovementPlugin {
     fn build(&self, app: &mut App) {
         app.register_type::<EnemyPath>()
-            .register_type::<CurrentIsLastStep>()
             .add_event::<PathChangedEvent>()
             .add_systems(
                 Update,
@@ -43,12 +42,6 @@ impl EnemyPath {
     }
 }
 
-#[derive(Reflect, Component)]
-#[reflect(Component)]
-/// Marker component used to prevent Entities from getting their EnemyPath component removed while
-/// they already are on their target tile (which makes them stuck and unable to pathfind to the end)
-struct CurrentIsLastStep;
-
 #[derive(Event)]
 pub struct PathChangedEvent {
     changed: Vec<GridPos>,
@@ -74,8 +67,9 @@ impl PathChangedEvent {
 fn try_get_target(
     tiles: &HashMap<GridPos, (Entity, usize)>,
     enemy: &Enemy,
-) -> Option<HashMap<GridPos, GridPos>> {
-    let distance = enemy.current.distance_to(&enemy.goal);
+    goals: &HashMap<GridPos, Entity>,
+) -> Option<(HashMap<GridPos, GridPos>, GridPos)> {
+    let distance = enemy.current.distance_to_closest(goals);
     let default_travel_cost = (enemy.velocity() / TILE_SIZE) as usize;
 
     // This is the A* algorithm, see https://www.youtube.com/watch?v=-L-WgKMFuhE
@@ -87,14 +81,14 @@ fn try_get_target(
 
     while let Some((tile, (_, g_cost, parent, tower_entity))) = open
         .iter()
-        .min_by(|x, y| x.1.0.cmp(&y.1.0))
+        .min_by_key(|x| x.1.0)
         .map(|(tile, data)| (*tile, *data))
     {
         open.remove(&tile);
         closed.insert(tile, parent);
 
-        if tile == enemy.goal {
-            return Some(closed);
+        if goals.contains_key(&tile) {
+            return Some((closed, tile));
         }
 
         for (neighbor, nb_tower_entity, travel_cost) in tile.neighbors(tiles, default_travel_cost) {
@@ -114,7 +108,7 @@ fn try_get_target(
                 open.insert(
                     neighbor,
                     (
-                        new_nb_g_cost + neighbor.distance_to(&enemy.goal),
+                        new_nb_g_cost + neighbor.distance_to_closest(goals),
                         new_nb_g_cost,
                         tile,
                         nb_tower_entity.copied(),
@@ -128,13 +122,20 @@ fn try_get_target(
 
 fn enemy_get_path(
     mut commands: Commands,
-    enemies: Query<(&Enemy, Entity), (Without<EnemyPath>, Without<Attacking>)>,
+    enemies: Query<
+        (&Enemy, Entity),
+        (
+            Without<EnemyPath>,
+            Without<Attacking>,
+            Without<AttackingGoal>,
+        ),
+    >,
     towers: Query<&Health, With<Tower>>,
     grid: Res<Grid>,
 ) {
-    let get_path = |closed: HashMap<GridPos, GridPos>, enemy: &Enemy| {
+    let get_path = |closed: HashMap<GridPos, GridPos>, enemy: &Enemy, goal: GridPos| {
         let mut path = vec![];
-        let mut current = enemy.goal;
+        let mut current = goal;
         while current != enemy.current {
             path.push(current);
             current = closed[&current];
@@ -142,9 +143,9 @@ fn enemy_get_path(
         path
     };
     for (enemy, entity) in &enemies {
-        if let Some(closed) = try_get_target(
+        if let Some((closed, goal)) = try_get_target(
             &grid
-                .tower
+                .towers
                 .iter()
                 .filter_map(|(pos, id)| {
                     towers
@@ -154,8 +155,9 @@ fn enemy_get_path(
                 })
                 .collect(),
             enemy,
+            &grid.enemy_goals,
         ) {
-            let path = get_path(closed, enemy);
+            let path = get_path(closed, enemy, goal);
             if !path.is_empty() {
                 commands.entity(entity).insert(EnemyPath::new(path));
                 return;
@@ -170,7 +172,7 @@ fn enemy_get_path(
 fn check_for_broken_paths(
     mut events: EventReader<PathChangedEvent>,
     mut commands: Commands,
-    enemies: Query<(&EnemyPath, Entity), (With<Enemy>, Without<CurrentIsLastStep>)>,
+    enemies: Query<(&EnemyPath, Entity), (With<Enemy>, Without<AttackingGoal>)>,
 ) {
     let mut freed_tiles: Vec<&GridPos> = vec![];
     let mut blocked_tiles: Vec<&GridPos> = vec![];
@@ -225,70 +227,95 @@ pub fn move_enemies(
 ) {
     for (mut path, mut enemy, mut animation, mut sprite, mut pos, entity) in &mut query {
         let next = match path.next {
-            Some(tile) => tile,
+            Some(target_pos) => target_pos,
             None => {
-                if let Some(tile) = path.steps.pop() {
-                    let orientation =
-                        match (tile.row > enemy.current.row, tile.col > enemy.current.col) {
-                            (true, false) => Orientation::Up,
-                            (false, true) => Orientation::Right,
-                            _ => match tile.row < enemy.current.row {
-                                true => Orientation::Down,
-                                false => Orientation::Left,
-                            },
-                        };
+                let Some(tile) = path.steps.pop() else {
+                    unreachable!(
+                        "Last step should always be the goal, at which point the EnemyPath should be removed"
+                    )
+                };
+                let orientation = match (tile.row > enemy.current.row, tile.col > enemy.current.col)
+                {
+                    (true, false) => Orientation::Up,
+                    (false, true) => Orientation::Right,
+                    _ => match tile.row < enemy.current.row {
+                        true => Orientation::Down,
+                        false => Orientation::Left,
+                    },
+                };
 
-                    if let Some(tower_entity) = grid.tower.get(&tile) {
-                        if orientation != enemy.orientation {
-                            enemy.orientation = orientation;
-                        }
-                        commands
-                            .entity(entity)
-                            .remove::<EnemyPath>()
-                            .insert((
-                                Attacking::new(*tower_entity, enemy.attack_cooldown()),
-                                enemy.attack_animation_config(),
-                                Sprite {
-                                    image: asset_server.load(enemy.attack_sprites()),
-                                    texture_atlas: Some(
-                                        enemy.attack_layout(&mut texture_atlas_layouts),
-                                    ),
-                                    ..Default::default()
-                                },
-                            ))
-                            .with_child((
-                                enemy.attack_animation_config(),
-                                Sprite {
-                                    image: asset_server.load(enemy.weapon_sprites()),
-                                    texture_atlas: Some(
-                                        enemy.attack_layout(&mut texture_atlas_layouts),
-                                    ),
-                                    ..Default::default()
-                                },
-                            ));
-                        return;
-                    }
-
+                if let Some(tower_entity) = grid.towers.get(&tile) {
                     if orientation != enemy.orientation {
                         enemy.orientation = orientation;
-                        *animation = enemy.walk_animation_config();
-                        if let Some(atlas) = &mut sprite.texture_atlas {
-                            atlas.index = enemy.walk_sprite_indices().0;
-                        }
                     }
-                    enemy.current = tile;
-                    let next = grid_to_world_coords(tile).extend(2.) + enemy.offset();
-                    path.next = Some(next);
-
-                    if path.steps.is_empty() {
-                        commands.entity(entity).insert(CurrentIsLastStep);
+                    commands
+                        .entity(entity)
+                        .remove::<EnemyPath>()
+                        .insert((
+                            Attacking(*tower_entity),
+                            enemy.attack_animation_config(),
+                            Sprite {
+                                image: asset_server.load(enemy.attack_sprites()),
+                                texture_atlas: Some(
+                                    enemy.attack_layout(&mut texture_atlas_layouts),
+                                ),
+                                ..Default::default()
+                            },
+                        ))
+                        .with_child((
+                            enemy.attack_animation_config(),
+                            Sprite {
+                                image: asset_server.load(enemy.weapon_sprites()),
+                                texture_atlas: Some(
+                                    enemy.attack_layout(&mut texture_atlas_layouts),
+                                ),
+                                ..Default::default()
+                            },
+                        ));
+                    return;
+                } else if grid.enemy_goals.contains_key(&tile) {
+                    if orientation != enemy.orientation {
+                        enemy.orientation = orientation;
                     }
-
-                    next
-                } else {
-                    commands.entity(entity).despawn();
+                    commands
+                        .entity(entity)
+                        .remove::<EnemyPath>()
+                        .insert((
+                            AttackingGoal(5),
+                            enemy.attack_animation_config(),
+                            Sprite {
+                                image: asset_server.load(enemy.attack_sprites()),
+                                texture_atlas: Some(
+                                    enemy.attack_layout(&mut texture_atlas_layouts),
+                                ),
+                                ..Default::default()
+                            },
+                        ))
+                        .with_child((
+                            enemy.attack_animation_config(),
+                            Sprite {
+                                image: asset_server.load(enemy.weapon_sprites()),
+                                texture_atlas: Some(
+                                    enemy.attack_layout(&mut texture_atlas_layouts),
+                                ),
+                                ..Default::default()
+                            },
+                        ));
                     return;
                 }
+
+                if orientation != enemy.orientation {
+                    enemy.orientation = orientation;
+                    *animation = enemy.walk_animation_config();
+                    if let Some(atlas) = &mut sprite.texture_atlas {
+                        atlas.index = enemy.walk_sprite_indices().0;
+                    }
+                }
+                enemy.current = tile;
+                let next = grid_to_world_coords(tile).extend(2.) + enemy.offset();
+                path.next = Some(next);
+
+                next
             }
         };
         let direction = next - pos.translation;

@@ -20,32 +20,24 @@ mod ui;
 fn main() {
     let mut app = App::new();
 
-    // only show debug logs on a debug build
-    #[cfg(debug_assertions)]
-    app.add_plugins(
-        DefaultPlugins
-            .set(WindowPlugin {
-                primary_window: Some(Window {
-                    present_mode: bevy::window::PresentMode::AutoNoVsync,
-                    mode: bevy::window::WindowMode::BorderlessFullscreen(MonitorSelection::Primary),
-                    ..default()
-                }),
-                ..default()
-            })
-            .set(LogPlugin {
-                level: Level::DEBUG,
-                ..default()
-            }),
-    );
-
-    #[cfg(not(debug_assertions))]
-    app.add_plugins(DefaultPlugins.set(WindowPlugin {
+    let mut default_plugins = DefaultPlugins.set(WindowPlugin {
         primary_window: Some(Window {
-            mode: bevy::window::WindowMode::BorderlessFullscreen(MonitorSelection::Current),
+            #[cfg(debug_assertions)]
+            present_mode: bevy::window::PresentMode::AutoNoVsync,
+            mode: bevy::window::WindowMode::BorderlessFullscreen(MonitorSelection::Primary),
             ..default()
         }),
         ..default()
-    }));
+    });
+
+    // only show debug logs on a debug build, unless the user specifies to keep the log level sane
+    #[cfg(debug_assertions)]
+    if !std::env::args().any(|a| a == "--ks" || a == "--keep-sanity") {
+        default_plugins = default_plugins.set(LogPlugin {
+            level: Level::DEBUG,
+            ..default()
+        });
+    }
 
     if std::env::args().any(|a| a == "--egui") {
         app.add_plugins(WorldInspectorPlugin::new());
@@ -56,6 +48,7 @@ fn main() {
     app.insert_resource(RngResource(Rng::new()));
 
     app.add_plugins((
+        default_plugins,
         animation::AnimationPlugin,
         GridPlugin,
         MapPlugin,

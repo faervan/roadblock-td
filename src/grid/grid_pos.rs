@@ -59,6 +59,23 @@ impl GridPos {
         other.row.abs_diff(self.row) + other.col.abs_diff(self.col)
     }
 
+    pub fn closest<'a>(&self, goals: &'a HashMap<GridPos, Entity>) -> &'a GridPos {
+        goals
+            .keys()
+            .map(|pos| (pos, self.distance_to(pos)))
+            .min_by_key(|x| x.1)
+            .expect("No goals exist anymore!")
+            .0
+    }
+
+    pub fn distance_to_closest(&self, goals: &HashMap<GridPos, Entity>) -> usize {
+        goals
+            .keys()
+            .map(|pos| self.distance_to(pos))
+            .min()
+            .expect("No goals exist anymore!")
+    }
+
     /// * `towers` - Every tower position mapped to its Entity and travel cost
     pub fn neighbors<'a>(
         &'a self,

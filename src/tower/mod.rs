@@ -59,7 +59,7 @@ impl Tower {
         for i in 0..rows {
             for j in 0..cols {
                 let pos = GridPos::new(origin.row + j, origin.col + i);
-                grid.tower.insert(pos, entity);
+                grid.towers.insert(pos, entity);
                 blocked.push(pos);
             }
         }
@@ -75,7 +75,7 @@ impl Tower {
         for i in 0..rows {
             for j in 0..cols {
                 let pos = GridPos::new(origin.row + j, origin.col + i);
-                grid.tower.remove(&pos);
+                grid.towers.remove(&pos);
                 freed.push(pos);
             }
         }
