@@ -7,7 +7,7 @@ use bevy::{
 
 use crate::{
     Health, RngResource,
-    grid::{COLUMNS, Grid, GridPos, ROWS, grid_to_world_coords},
+    grid::{Grid, GridPos, grid_to_world_coords},
 };
 
 use super::{Enemy, EnemyType, goal::spawn_enemy_goal};
@@ -57,6 +57,30 @@ impl EnemySpawn {
         }
     }
 
+    fn add_unbuildable_surroundings(&self, grid: &mut Grid) {
+        grid.unbuildable.extend(
+            match self.variant {
+                EnemySpawnType::RedTower => [
+                    [0, -1],
+                    [1, -1],
+                    [0, 2],
+                    [1, 2],
+                    [-1, -1],
+                    [-1, 0],
+                    [-1, 1],
+                    [-1, 2],
+                    [2, -1],
+                    [2, 0],
+                    [2, 1],
+                    [2, 2],
+                ],
+            }
+            .into_iter()
+            .map(|offset| self.pos + offset)
+            .filter(|pos| pos.inside_grid_bounds()),
+        );
+    }
+
     fn spawn_point(&self) -> Vec2 {
         grid_to_world_coords(self.pos)
             + match self.variant {
@@ -93,22 +117,24 @@ fn spawn_enemy_spawners(
     let mut other_tiles = HashSet::new();
 
     while origin_tiles.len() != 5 {
-        let [row, col] = [rng.isize(0..(ROWS - 1)), rng.isize(0..(COLUMNS - 1))];
+        let grid_pos = GridPos::random(&mut rng);
 
-        let spawner = EnemySpawn::new(EnemySpawnType::RedTower, GridPos::new(row, col));
+        let spawner = EnemySpawn::new(EnemySpawnType::RedTower, grid_pos);
         let other = spawner.other_tiles();
 
         if spawner.pos.distance_to_closest(&grid.enemy_goals) >= 20
             && !other.iter().any(|pos| other_tiles.contains(pos))
             && !other_tiles.contains(&spawner.pos)
         {
-            origin_tiles.insert(GridPos::new(row, col), spawner);
+            origin_tiles.insert(grid_pos, spawner);
             other_tiles.extend(other);
         }
     }
 
     for (pos, spawner) in origin_tiles.into_iter() {
         let other = spawner.other_tiles();
+        spawner.add_unbuildable_surroundings(&mut grid);
+
         let entity = commands
             .spawn((
                 Sprite::from_image(asset_server.load(spawner.sprite())),

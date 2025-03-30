@@ -23,7 +23,7 @@ impl Plugin for EnemyAttackPlugin {
 #[reflect(Component)]
 pub struct Attacking(pub Entity);
 
-#[derive(Component, Reflect, Deref)]
+#[derive(Component, Reflect, Deref, DerefMut)]
 #[reflect(Component)]
 pub struct AttackingGoal(pub u8);
 
@@ -84,7 +84,7 @@ fn enemy_attacking_goal(
         }
         enemy.attack_timer.reset();
 
-        attacks.0 -= 1;
+        **attacks -= 1;
         if **attacks == 0 {
             commands.entity(entity).despawn_recursive();
         }

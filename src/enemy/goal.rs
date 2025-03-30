@@ -31,6 +31,30 @@ impl EnemyGoal {
         }
     }
 
+    fn add_unbuildable_surroundings(&self, origin: &GridPos, grid: &mut Grid) {
+        grid.unbuildable.extend(
+            match self {
+                EnemyGoal::Heart => [
+                    [0, -1],
+                    [1, -1],
+                    [0, 2],
+                    [1, 2],
+                    [-1, -1],
+                    [-1, 0],
+                    [-1, 1],
+                    [-1, 2],
+                    [2, -1],
+                    [2, 0],
+                    [2, 1],
+                    [2, 2],
+                ],
+            }
+            .into_iter()
+            .map(|offset| origin + offset)
+            .filter(|pos| pos.inside_grid_bounds()),
+        );
+    }
+
     fn sprite(&self) -> &str {
         match self {
             EnemyGoal::Heart => "sprites/goals/heart.png",
@@ -68,6 +92,7 @@ pub fn spawn_enemy_goal(
             goal,
         ))
         .id();
+    goal.add_unbuildable_surroundings(&grid_pos, &mut grid);
     grid.enemy_goals.insert(grid_pos, entity);
     for pos in goal.other_tiles(&grid_pos) {
         grid.enemy_goals.insert(pos, entity);

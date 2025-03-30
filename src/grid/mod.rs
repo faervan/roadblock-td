@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use bevy::utils::HashMap;
+use bevy::utils::{HashMap, HashSet};
 
 pub use grid_pos::GridPos;
 
@@ -32,6 +32,7 @@ pub struct Grid {
     pub tower_origins: HashMap<Entity, GridPos>,
     pub enemy_spawners: HashMap<GridPos, Entity>,
     pub enemy_goals: HashMap<GridPos, Entity>,
+    pub unbuildable: HashSet<GridPos>,
 }
 
 impl Grid {
@@ -39,6 +40,7 @@ impl Grid {
         !self.towers.contains_key(position)
             && !self.enemy_spawners.contains_key(position)
             && !self.enemy_goals.contains_key(position)
+            && !self.unbuildable.contains(position)
     }
 }
 

@@ -4,6 +4,7 @@ use std::{
 };
 
 use bevy::{prelude::*, utils::HashMap};
+use fastrand::Rng;
 
 use super::{COLUMNS, ROWS};
 
@@ -49,10 +50,57 @@ impl Add<&GridPos> for &GridPos {
         }
     }
 }
+impl Add<[isize; 2]> for GridPos {
+    type Output = GridPos;
+    fn add(self, rhs: [isize; 2]) -> Self::Output {
+        GridPos {
+            row: self.row + rhs[0],
+            col: self.col + rhs[1],
+        }
+    }
+}
+impl Add<GridPos> for [isize; 2] {
+    type Output = GridPos;
+    fn add(self, rhs: GridPos) -> Self::Output {
+        GridPos {
+            row: rhs.row + self[0],
+            col: rhs.col + self[1],
+        }
+    }
+}
+impl Add<[isize; 2]> for &GridPos {
+    type Output = GridPos;
+    fn add(self, rhs: [isize; 2]) -> Self::Output {
+        GridPos {
+            row: self.row + rhs[0],
+            col: self.col + rhs[1],
+        }
+    }
+}
+impl Add<&GridPos> for [isize; 2] {
+    type Output = GridPos;
+    fn add(self, rhs: &GridPos) -> Self::Output {
+        GridPos {
+            row: rhs.row + self[0],
+            col: rhs.col + self[1],
+        }
+    }
+}
 
 impl GridPos {
     pub fn new(row: isize, col: isize) -> Self {
         GridPos { row, col }
+    }
+
+    pub fn random(rng: &mut Rng) -> Self {
+        Self {
+            row: rng.isize(0..(ROWS - 1)),
+            col: rng.isize(0..(COLUMNS - 1)),
+        }
+    }
+
+    pub fn inside_grid_bounds(&self) -> bool {
+        (0..ROWS).contains(&self.row) && (0..COLUMNS).contains(&self.col)
     }
 
     pub fn distance_to(&self, other: &GridPos) -> usize {
@@ -85,8 +133,8 @@ impl GridPos {
         let mut neighbors = vec![];
 
         let mut push_maybe = |row, col| {
-            if (0..ROWS).contains(&row) && (0..COLUMNS).contains(&col) {
-                let tile = GridPos::new(row, col);
+            let tile = GridPos::new(row, col);
+            if tile.inside_grid_bounds() {
                 match towers.get(&tile) {
                     Some((entity, travel_cost)) => {
                         neighbors.push((tile, Some(entity), *travel_cost))
