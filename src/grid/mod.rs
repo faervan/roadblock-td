@@ -3,6 +3,8 @@ use bevy::utils::{HashMap, HashSet};
 
 pub use grid_pos::GridPos;
 
+use crate::app_state::InGame;
+
 mod grid_pos;
 
 pub const ROWS: isize = 40;
@@ -17,13 +19,14 @@ pub struct GridPlugin;
 
 impl Plugin for GridPlugin {
     fn build(&self, app: &mut App) {
-        app.insert_resource(Grid::default());
         app.register_type::<Grid>();
-        app.add_systems(Startup, spawn_grid);
+        app.init_resource::<Grid>();
+        app.add_systems(OnEnter(InGame), spawn_grid);
+        app.add_systems(OnExit(InGame), exit);
     }
 }
 
-#[derive(Reflect, Resource, Default)]
+#[derive(Reflect, Resource, Default, Debug)]
 #[reflect(Resource)]
 pub struct Grid {
     /// contains all tiles occupied by a tower
@@ -44,7 +47,9 @@ impl Grid {
     }
 }
 
-fn spawn_grid(mut commands: Commands) {
+pub fn spawn_grid(mut commands: Commands) {
+    commands.insert_resource(Grid::default());
+
     let position =
         |total: f32, current| (-(total * 0.5 * TILE_SIZE) + current * TILE_SIZE) - TILE_SIZE * 0.5;
 
@@ -92,6 +97,10 @@ fn spawn_grid(mut commands: Commands) {
             },
         ));
     }
+}
+
+fn exit(mut commands: Commands) {
+    commands.remove_resource::<Grid>();
 }
 
 pub fn world_to_grid_coords(pos: Vec2) -> Option<GridPos> {

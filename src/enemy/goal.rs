@@ -1,23 +1,39 @@
 use bevy::prelude::*;
 
-use crate::grid::{COLUMNS, Grid, GridPos, ROWS, grid_to_world_coords};
+use crate::{
+    Health,
+    app_state::InGame,
+    grid::{COLUMNS, Grid, GridPos, ROWS, grid_to_world_coords, spawn_grid},
+};
 
 pub struct EnemyGoalPlugin;
 
 impl Plugin for EnemyGoalPlugin {
     fn build(&self, app: &mut App) {
         app.register_type::<EnemyGoal>()
-            .add_systems(Startup, spawn_enemy_goal);
+            .add_systems(OnEnter(InGame), spawn_enemy_goal.after(spawn_grid));
     }
 }
 
 #[derive(Reflect, Component, Clone, Copy)]
 #[reflect(Component)]
-enum EnemyGoal {
+pub enum EnemyGoal {
     Heart,
 }
 
 impl EnemyGoal {
+    fn max_hp(&self) -> isize {
+        match self {
+            EnemyGoal::Heart => 200,
+        }
+    }
+
+    pub fn thorn_damage(&self) -> isize {
+        match self {
+            EnemyGoal::Heart => 10,
+        }
+    }
+
     /// Returns all the tiles that belong to the goal, relative to the "origin tile"
     fn other_tiles(&self, origin: &GridPos) -> Vec<GridPos> {
         match self {
@@ -83,6 +99,7 @@ pub fn spawn_enemy_goal(
     let goal = EnemyGoal::Heart;
     let entity = commands
         .spawn((
+            Health(goal.max_hp()),
             Sprite::from_image(asset_server.load(goal.sprite())),
             Transform {
                 translation: grid_to_world_coords(grid_pos).extend(1.0) + goal.offset(),

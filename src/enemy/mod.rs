@@ -10,6 +10,7 @@ use spawner::EnemySpawnerPlugin;
 use crate::{
     Health, Orientation,
     animation::AnimationConfig,
+    app_state::InGame,
     grid::{Grid, GridPos, grid_to_world_coords, world_to_grid_coords},
 };
 
@@ -31,7 +32,9 @@ impl Plugin for EnemyPlugin {
             ))
             .add_systems(
                 Update,
-                spawn_enemies_manual.run_if(input_just_pressed(MouseButton::Right)),
+                spawn_enemies_manual
+                    .run_if(input_just_pressed(MouseButton::Right))
+                    .run_if(in_state(InGame)),
             );
     }
 }

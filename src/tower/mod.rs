@@ -1,13 +1,10 @@
-use std::{
-    ops::{Deref, DerefMut},
-    time::Duration,
-};
+use std::time::Duration;
 
 use attack::TowerAttackPlugin;
 use bevy::prelude::*;
 use placing::TowerPlacingPlugin;
 
-pub use placing::{SelectedTower, TowerPlaceState, place_tower};
+pub use placing::{SelectedTower, place_tower};
 
 use crate::{
     Orientation,
@@ -21,15 +18,15 @@ pub struct TowerPlugin;
 
 impl Plugin for TowerPlugin {
     fn build(&self, app: &mut App) {
-        app.init_state::<TowerPlaceState>();
         app.register_type::<Tower>();
         app.add_plugins((TowerPlacingPlugin, TowerAttackPlugin));
     }
 }
 
-#[derive(Reflect, Component, Clone)]
+#[derive(Reflect, Component, Clone, Deref, DerefMut)]
 #[reflect(Component)]
 pub struct Tower {
+    #[deref]
     pub variant: TowerType,
     attack_timer: Timer,
     pub orientation: Orientation,
@@ -151,18 +148,5 @@ impl TowerType {
             TowerType::SpikedWall => Duration::from_secs(1),
             _ => Duration::ZERO,
         }
-    }
-}
-
-impl Deref for Tower {
-    type Target = TowerType;
-    fn deref(&self) -> &Self::Target {
-        &self.variant
-    }
-}
-
-impl DerefMut for Tower {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.variant
     }
 }

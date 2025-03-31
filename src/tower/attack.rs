@@ -1,6 +1,6 @@
 use bevy::{color::palettes::css::RED, prelude::*};
 
-use crate::{Health, enemy::Enemy, grid::TILE_SIZE};
+use crate::{Health, app_state::InGame, enemy::Enemy, grid::TILE_SIZE};
 
 use super::Tower;
 
@@ -8,8 +8,11 @@ pub struct TowerAttackPlugin;
 
 impl Plugin for TowerAttackPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Update, (shoot, move_projectile, projectile_damage));
         app.register_type::<Projectile>();
+        app.add_systems(
+            Update,
+            (shoot, move_projectile, projectile_damage).run_if(in_state(InGame)),
+        );
     }
 }
 

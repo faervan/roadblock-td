@@ -3,6 +3,7 @@ use bevy::{prelude::*, utils::HashMap};
 use crate::{
     Health, Orientation,
     animation::AnimationConfig,
+    app_state::InGame,
     enemy::Enemy,
     grid::{Grid, GridPos, TILE_SIZE, grid_to_world_coords},
     tower::{Tower, place_tower},
@@ -24,7 +25,8 @@ impl Plugin for EnemyMovementPlugin {
                         .after(place_tower),
                     enemy_get_path.after(check_for_broken_paths),
                     move_enemies,
-                ),
+                )
+                    .run_if(in_state(InGame)),
             );
     }
 }
@@ -281,7 +283,7 @@ pub fn move_enemies(
                         .entity(entity)
                         .remove::<EnemyPath>()
                         .insert((
-                            AttackingGoal(5),
+                            AttackingGoal,
                             enemy.attack_animation_config(),
                             Sprite {
                                 image: asset_server.load(enemy.attack_sprites()),

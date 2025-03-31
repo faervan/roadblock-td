@@ -1,5 +1,7 @@
 use bevy::{input::mouse::AccumulatedMouseMotion, prelude::*, window::PrimaryWindow};
 
+use crate::app_state::InGame;
+
 const BACKGROUND_COLOR: Color = Color::hsl(150., 1., 0.4);
 
 pub struct MapPlugin;
@@ -7,8 +9,9 @@ pub struct MapPlugin;
 impl Plugin for MapPlugin {
     fn build(&self, app: &mut App) {
         app.register_type::<MapInfo>()
-            .add_systems(Startup, init)
-            .add_systems(Update, (pan_camera, exit_on_ctrl_q));
+            .add_systems(OnEnter(InGame), init)
+            .add_systems(OnExit(InGame), exit)
+            .add_systems(Update, pan_camera.run_if(in_state(InGame)));
     }
 }
 
@@ -21,8 +24,6 @@ struct MapInfo {
 }
 
 fn init(mut commands: Commands) {
-    commands.spawn(Camera2d);
-
     let map_size = Vec2::new(3000., 2000.);
     let map_anchor = Vec2::new(-map_size.x / 2., -map_size.y / 2.);
 
@@ -38,6 +39,11 @@ fn init(mut commands: Commands) {
         size: map_size,
         anchor: map_anchor,
     });
+}
+
+fn exit(mut commands: Commands, mut camera: Single<&mut Transform, With<Camera>>) {
+    camera.translation = Vec3::ZERO;
+    commands.remove_resource::<MapInfo>();
 }
 
 fn pan_camera(
@@ -82,11 +88,5 @@ fn pan_camera(
         camera.translation.y = map_info.anchor.y + window_size.y;
     } else if camera.translation.y > map_info.anchor.y + map_info.size.y - window_size.y {
         camera.translation.y = map_info.anchor.y + map_info.size.y - window_size.y;
-    }
-}
-
-fn exit_on_ctrl_q(mut app_exit: EventWriter<AppExit>, input: Res<ButtonInput<KeyCode>>) {
-    if input.pressed(KeyCode::ControlLeft) && input.just_pressed(KeyCode::KeyQ) {
-        app_exit.send(AppExit::Success);
     }
 }

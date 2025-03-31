@@ -1,3 +1,4 @@
+use app_state::AppStatePlugin;
 use bevy::prelude::*;
 use bevy_inspector_egui::quick::WorldInspectorPlugin;
 use enemy::EnemyPlugin;
@@ -8,6 +9,7 @@ use tower::TowerPlugin;
 use ui::UIPlugin;
 
 mod animation;
+mod app_state;
 mod enemy;
 mod grid;
 mod map;
@@ -36,6 +38,7 @@ fn main() {
     app.insert_resource(RngResource(Rng::new()));
 
     app.add_plugins((
+        AppStatePlugin,
         animation::AnimationPlugin,
         GridPlugin,
         MapPlugin,
@@ -43,6 +46,10 @@ fn main() {
         EnemyPlugin,
         UIPlugin,
     ));
+
+    app.add_systems(Startup, setup);
+    app.add_systems(Update, exit_on_ctrl_q);
+
     app.run();
 }
 
@@ -70,3 +77,13 @@ impl Orientation {
 #[derive(Component, Reflect, Deref, DerefMut)]
 #[reflect(Component)]
 struct Health(isize);
+
+fn setup(mut commands: Commands) {
+    commands.spawn(Camera2d);
+}
+
+fn exit_on_ctrl_q(mut app_exit: EventWriter<AppExit>, input: Res<ButtonInput<KeyCode>>) {
+    if input.pressed(KeyCode::ControlLeft) && input.just_pressed(KeyCode::KeyQ) {
+        app_exit.send(AppExit::Success);
+    }
+}

@@ -1,8 +1,13 @@
 use bevy::prelude::*;
 
-use crate::{Health, grid::Grid, tower::Tower};
+use crate::{
+    Health,
+    app_state::{AppState, InGame},
+    grid::Grid,
+    tower::Tower,
+};
 
-use super::{Enemy, PathChangedEvent};
+use super::{Enemy, PathChangedEvent, goal::EnemyGoal};
 
 pub struct EnemyAttackPlugin;
 
@@ -14,7 +19,8 @@ impl Plugin for EnemyAttackPlugin {
                 advance_enemy_attack_timers,
                 enemy_attacking,
                 enemy_attacking_goal,
-            ),
+            )
+                .run_if(in_state(InGame)),
         );
     }
 }
@@ -23,9 +29,9 @@ impl Plugin for EnemyAttackPlugin {
 #[reflect(Component)]
 pub struct Attacking(pub Entity);
 
-#[derive(Component, Reflect, Deref, DerefMut)]
+#[derive(Component, Reflect)]
 #[reflect(Component)]
-pub struct AttackingGoal(pub u8);
+pub struct AttackingGoal;
 
 fn advance_enemy_attack_timers(mut enemies: Query<&mut Enemy>, time: Res<Time>) {
     for mut enemy in &mut enemies {
@@ -75,18 +81,27 @@ fn enemy_attacking(
 }
 
 fn enemy_attacking_goal(
-    mut enemies: Query<(&mut Enemy, &mut AttackingGoal, Entity)>,
+    mut enemies: Query<(&mut Enemy, &mut Health, Entity), With<AttackingGoal>>,
     mut commands: Commands,
+    mut goal: Single<(&EnemyGoal, &mut Health), Without<Enemy>>,
+    mut next_state: ResMut<NextState<AppState>>,
 ) {
-    for (mut enemy, mut attacks, entity) in &mut enemies {
+    let (goal, goal_health) = (goal.0, &mut goal.1);
+    for (mut enemy, mut enemy_health, entity) in &mut enemies {
         if !enemy.attack_timer.finished() {
             continue;
         }
         enemy.attack_timer.reset();
 
-        **attacks -= 1;
-        if **attacks == 0 {
+        **enemy_health -= goal.thorn_damage();
+        if **enemy_health <= 0 {
             commands.entity(entity).despawn_recursive();
+        }
+
+        ***goal_health -= enemy.damage();
+        if ***goal_health <= 0 {
+            next_state.set(AppState::game_over());
+            info!("GAMEOVER!!");
         }
     }
 }

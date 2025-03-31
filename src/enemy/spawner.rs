@@ -7,6 +7,7 @@ use bevy::{
 
 use crate::{
     Health, RngResource,
+    app_state::InGame,
     grid::{Grid, GridPos, grid_to_world_coords},
 };
 
@@ -17,8 +18,11 @@ pub struct EnemySpawnerPlugin;
 impl Plugin for EnemySpawnerPlugin {
     fn build(&self, app: &mut App) {
         app.register_type::<EnemySpawn>()
-            .add_systems(Startup, spawn_enemy_spawners.after(spawn_enemy_goal))
-            .add_systems(Update, spawn_enemies);
+            .add_systems(
+                OnEnter(InGame),
+                spawn_enemy_spawners.after(spawn_enemy_goal),
+            )
+            .add_systems(Update, spawn_enemies.run_if(in_state(InGame)));
     }
 }
 

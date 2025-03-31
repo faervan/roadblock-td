@@ -4,6 +4,7 @@ use bevy::{input::common_conditions::input_just_pressed, prelude::*, window::Pri
 
 use crate::{
     Health, Orientation,
+    app_state::{AppState, TowerPlacing, set_tower_placing_state},
     enemy::PathChangedEvent,
     grid::{COLUMNS, Grid, GridPos, ROWS, TILE_SIZE, grid_to_world_coords, world_to_grid_coords},
 };
@@ -16,30 +17,26 @@ impl Plugin for TowerPlacingPlugin {
     fn build(&self, app: &mut App) {
         app.register_type::<TowerPreview>()
             .insert_resource(SelectedTower(Tower::new(TowerType::Wall, Orientation::Up)))
-            .add_systems(OnEnter(TowerPlaceState::Active), spawn_preview)
-            .add_systems(OnExit(TowerPlaceState::Active), despawn_preview)
+            .add_systems(OnEnter(TowerPlacing), spawn_preview)
+            .add_systems(OnExit(TowerPlacing), despawn_preview)
             .add_systems(
                 Update,
                 (
                     place_tower.run_if(input_just_pressed(MouseButton::Left)),
                     change_rotation.run_if(input_just_pressed(KeyCode::KeyR)),
                     update_preview,
-                    exit_tower_place_state.run_if(input_just_pressed(KeyCode::Escape)),
+                    exit_tower_place_state.run_if(input_just_pressed(KeyCode::KeyQ)),
                 )
-                    .run_if(in_state(TowerPlaceState::Active)),
+                    .run_if(in_state(TowerPlacing)),
             );
     }
 }
 
-#[derive(States, Clone, PartialEq, Eq, Hash, Debug, Default)]
-pub enum TowerPlaceState {
-    Active,
-    #[default]
-    Inactive,
-}
-
-fn exit_tower_place_state(mut next_state: ResMut<NextState<TowerPlaceState>>) {
-    next_state.set(TowerPlaceState::Inactive);
+fn exit_tower_place_state(
+    current_state: Res<State<AppState>>,
+    mut next_state: ResMut<NextState<AppState>>,
+) {
+    set_tower_placing_state(&current_state, &mut next_state);
 }
 
 #[derive(Reflect, Resource)]
@@ -68,7 +65,8 @@ pub fn place_tower(
     window: Single<&Window, With<PrimaryWindow>>,
     cam: Single<(&Camera, &GlobalTransform)>,
     input: Res<ButtonInput<KeyCode>>,
-    mut next_state: ResMut<NextState<TowerPlaceState>>,
+    current_state: Res<State<AppState>>,
+    mut next_state: ResMut<NextState<AppState>>,
     mut grid: ResMut<Grid>,
     tower: Res<SelectedTower>,
 ) {
@@ -128,7 +126,7 @@ pub fn place_tower(
                 ));
 
                 if !input.pressed(KeyCode::ShiftLeft) {
-                    next_state.set(TowerPlaceState::Inactive);
+                    set_tower_placing_state(&current_state, &mut next_state);
                 }
             }
         } else {
@@ -158,14 +156,16 @@ fn spawn_preview(mut commands: Commands) {
     ));
 }
 
-fn despawn_preview(mut commands: Commands, preview: Single<Entity, With<TowerPreview>>) {
-    commands.entity(*preview).despawn();
+fn despawn_preview(mut commands: Commands, preview: Query<Entity, With<TowerPreview>>) {
+    if let Ok(preview) = preview.get_single() {
+        commands.entity(preview).despawn();
+    }
 }
 
 fn update_preview(
     window: Single<&Window, With<PrimaryWindow>>,
     cam: Single<(&Camera, &GlobalTransform)>,
-    grid: ResMut<Grid>,
+    grid: Res<Grid>,
     tower: Res<SelectedTower>,
     mut preview: Query<(&mut Sprite, &mut Transform, &mut Visibility), With<TowerPreview>>,
 ) {
