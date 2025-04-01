@@ -2,7 +2,7 @@ use bevy::prelude::*;
 
 use crate::{
     Settings,
-    app_state::{AppState, InGame, set_tower_placing_state},
+    app_state::{AppState, TowerPlacingState},
     tower::{SelectedTower, Tower, TowerType},
 };
 
@@ -11,8 +11,8 @@ pub struct TowerSelectionPlugin;
 impl Plugin for TowerSelectionPlugin {
     fn build(&self, app: &mut App) {
         app.register_type::<TowerButton>();
-        app.add_systems(OnEnter(InGame), init_ui);
-        app.add_systems(Update, handle_buttons.run_if(in_state(InGame)));
+        app.add_systems(OnEnter(AppState::Game), init_ui);
+        app.add_systems(Update, handle_buttons.run_if(in_state(AppState::Game)));
     }
 }
 
@@ -82,8 +82,7 @@ fn handle_buttons(
         (Changed<Interaction>, With<Button>),
     >,
     mut selection: ResMut<SelectedTower>,
-    current_state: Res<State<AppState>>,
-    mut next_state: ResMut<NextState<AppState>>,
+    mut next_state: ResMut<NextState<TowerPlacingState>>,
     asset_server: Res<AssetServer>,
     mut commands: Commands,
     settings: Res<Settings>,
@@ -97,7 +96,7 @@ fn handle_buttons(
                 }
                 *color = BackgroundColor(BUTTON_PRESS_COLOR);
                 selection.0 = Tower::new(tower.0, selection.orientation);
-                set_tower_placing_state(&current_state, &mut next_state);
+                next_state.set(TowerPlacingState::Placing);
             }
             _ => *color = BackgroundColor(BUTTON_COLOR),
         }

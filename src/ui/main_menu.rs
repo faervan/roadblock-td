@@ -103,7 +103,7 @@ fn menu_action(
         if *interaction == Interaction::Pressed {
             match menu_button_action {
                 MainMenuAction::Play => {
-                    app_state.set(AppState::in_game());
+                    app_state.set(AppState::Game);
                 }
                 MainMenuAction::OpenSettings => {
                     menu_state.set(MenuState::Settings);

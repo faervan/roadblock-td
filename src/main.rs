@@ -47,9 +47,14 @@ fn main() {
 
     app.insert_resource(RngResource(Rng::new()));
 
+    let [sfx_enabled, soundtrack_enabled] = match std::env::args().any(|a| a == "--silent") {
+        true => [false, false],
+        false => [true, true],
+    };
+
     app.insert_resource(Settings {
-        sfx_enabled: true,
-        soundtrack_enabled: true,
+        sfx_enabled,
+        soundtrack_enabled,
     });
 
     app.add_plugins((

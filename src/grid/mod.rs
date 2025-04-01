@@ -3,7 +3,7 @@ use bevy::utils::{HashMap, HashSet};
 
 pub use grid_pos::GridPos;
 
-use crate::app_state::InGame;
+use crate::app_state::AppState;
 
 mod grid_pos;
 
@@ -21,8 +21,8 @@ impl Plugin for GridPlugin {
     fn build(&self, app: &mut App) {
         app.register_type::<Grid>();
         app.init_resource::<Grid>();
-        app.add_systems(OnEnter(InGame), spawn_grid);
-        app.add_systems(OnExit(InGame), exit);
+        app.add_systems(OnEnter(AppState::Game), spawn_grid);
+        app.add_systems(OnExit(AppState::Game), exit);
     }
 }
 

@@ -4,7 +4,7 @@ use bevy::{input::common_conditions::input_just_pressed, prelude::*, window::Pri
 
 use crate::{
     Health, Orientation,
-    app_state::{AppState, TowerPlacing, set_tower_placing_state},
+    app_state::TowerPlacingState,
     enemy::PathChangedEvent,
     grid::{COLUMNS, Grid, GridPos, ROWS, TILE_SIZE, grid_to_world_coords, world_to_grid_coords},
 };
@@ -17,8 +17,8 @@ impl Plugin for TowerPlacingPlugin {
     fn build(&self, app: &mut App) {
         app.register_type::<TowerPreview>()
             .insert_resource(SelectedTower(Tower::new(TowerType::Wall, Orientation::Up)))
-            .add_systems(OnEnter(TowerPlacing), spawn_preview)
-            .add_systems(OnExit(TowerPlacing), despawn_preview)
+            .add_systems(OnEnter(TowerPlacingState::Placing), spawn_preview)
+            .add_systems(OnExit(TowerPlacingState::Placing), despawn_preview)
             .add_systems(
                 Update,
                 (
@@ -27,16 +27,13 @@ impl Plugin for TowerPlacingPlugin {
                     update_preview,
                     exit_tower_place_state.run_if(input_just_pressed(KeyCode::KeyQ)),
                 )
-                    .run_if(in_state(TowerPlacing)),
+                    .run_if(in_state(TowerPlacingState::Placing)),
             );
     }
 }
 
-fn exit_tower_place_state(
-    current_state: Res<State<AppState>>,
-    mut next_state: ResMut<NextState<AppState>>,
-) {
-    set_tower_placing_state(&current_state, &mut next_state);
+fn exit_tower_place_state(mut next_state: ResMut<NextState<TowerPlacingState>>) {
+    next_state.set(TowerPlacingState::None);
 }
 
 #[derive(Reflect, Resource)]
@@ -65,8 +62,7 @@ pub fn place_tower(
     window: Single<&Window, With<PrimaryWindow>>,
     cam: Single<(&Camera, &GlobalTransform)>,
     input: Res<ButtonInput<KeyCode>>,
-    current_state: Res<State<AppState>>,
-    mut next_state: ResMut<NextState<AppState>>,
+    mut next_state: ResMut<NextState<TowerPlacingState>>,
     mut grid: ResMut<Grid>,
     tower: Res<SelectedTower>,
 ) {
@@ -126,7 +122,7 @@ pub fn place_tower(
                 ));
 
                 if !input.pressed(KeyCode::ShiftLeft) {
-                    set_tower_placing_state(&current_state, &mut next_state);
+                    next_state.set(TowerPlacingState::None);
                 }
             }
         } else {

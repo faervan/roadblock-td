@@ -3,7 +3,7 @@ use bevy::{prelude::*, utils::HashMap};
 use crate::{
     Health, Orientation,
     animation::AnimationConfig,
-    app_state::InGame,
+    app_state::AppState,
     enemy::Enemy,
     grid::{Grid, GridPos, TILE_SIZE, grid_to_world_coords},
     tower::{Tower, place_tower},
@@ -26,7 +26,7 @@ impl Plugin for EnemyMovementPlugin {
                     enemy_get_path.after(check_for_broken_paths),
                     move_enemies,
                 )
-                    .run_if(in_state(InGame)),
+                    .run_if(in_state(AppState::Game)),
             );
     }
 }

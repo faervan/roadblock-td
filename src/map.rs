@@ -1,6 +1,6 @@
 use bevy::{input::mouse::AccumulatedMouseMotion, prelude::*, window::PrimaryWindow};
 
-use crate::app_state::InGame;
+use crate::app_state::AppState;
 
 const BACKGROUND_COLOR: Color = Color::hsl(150., 1., 0.4);
 
@@ -9,9 +9,9 @@ pub struct MapPlugin;
 impl Plugin for MapPlugin {
     fn build(&self, app: &mut App) {
         app.register_type::<MapInfo>()
-            .add_systems(OnEnter(InGame), init)
-            .add_systems(OnExit(InGame), exit)
-            .add_systems(Update, pan_camera.run_if(in_state(InGame)));
+            .add_systems(OnEnter(AppState::Game), init)
+            .add_systems(OnExit(AppState::Game), exit)
+            .add_systems(Update, pan_camera.run_if(in_state(AppState::Game)));
     }
 }
 

@@ -2,7 +2,7 @@ use bevy::prelude::*;
 
 use crate::{
     Health,
-    app_state::{AppState, InGame},
+    app_state::{AppState, GameState},
     grid::Grid,
     tower::Tower,
 };
@@ -20,7 +20,7 @@ impl Plugin for EnemyAttackPlugin {
                 enemy_attacking,
                 enemy_attacking_goal,
             )
-                .run_if(in_state(InGame)),
+                .run_if(in_state(AppState::Game)),
         );
     }
 }
@@ -84,7 +84,7 @@ fn enemy_attacking_goal(
     mut enemies: Query<(&mut Enemy, &mut Health, Entity), With<AttackingGoal>>,
     mut commands: Commands,
     mut goal: Single<(&EnemyGoal, &mut Health), Without<Enemy>>,
-    mut next_state: ResMut<NextState<AppState>>,
+    mut next_state: ResMut<NextState<GameState>>,
 ) {
     let (goal, goal_health) = (goal.0, &mut goal.1);
     for (mut enemy, mut enemy_health, entity) in &mut enemies {
@@ -100,7 +100,7 @@ fn enemy_attacking_goal(
 
         ***goal_health -= enemy.damage();
         if ***goal_health <= 0 {
-            next_state.set(AppState::game_over());
+            next_state.set(GameState::GameOver);
             info!("GAMEOVER!!");
         }
     }

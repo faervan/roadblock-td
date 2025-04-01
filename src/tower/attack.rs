@@ -1,6 +1,6 @@
 use bevy::{color::palettes::css::RED, prelude::*};
 
-use crate::{Health, app_state::InGame, enemy::Enemy, grid::TILE_SIZE};
+use crate::{Health, app_state::AppState, enemy::Enemy, grid::TILE_SIZE};
 
 use super::Tower;
 
@@ -11,7 +11,7 @@ impl Plugin for TowerAttackPlugin {
         app.register_type::<Projectile>();
         app.add_systems(
             Update,
-            (shoot, move_projectile, projectile_damage).run_if(in_state(InGame)),
+            (shoot, move_projectile, projectile_damage).run_if(in_state(AppState::Game)),
         );
     }
 }

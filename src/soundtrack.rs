@@ -1,9 +1,6 @@
 use bevy::prelude::*;
 
-use crate::{
-    Settings,
-    app_state::{AppState, InGame},
-};
+use crate::{Settings, app_state::AppState};
 
 const FADE_TIME: f32 = 2.0;
 
@@ -25,7 +22,7 @@ impl Plugin for SoundtrackPlugin {
                 ),
             )
             .add_systems(OnEnter(AppState::Menu), play_menu_soundtrack)
-            .add_systems(OnEnter(InGame), play_game_soundtrack);
+            .add_systems(OnEnter(AppState::Game), play_game_soundtrack);
     }
 }
 

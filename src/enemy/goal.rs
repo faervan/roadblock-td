@@ -2,7 +2,7 @@ use bevy::prelude::*;
 
 use crate::{
     Health,
-    app_state::InGame,
+    app_state::AppState,
     grid::{COLUMNS, Grid, GridPos, ROWS, grid_to_world_coords, spawn_grid},
 };
 
@@ -11,7 +11,7 @@ pub struct EnemyGoalPlugin;
 impl Plugin for EnemyGoalPlugin {
     fn build(&self, app: &mut App) {
         app.register_type::<EnemyGoal>()
-            .add_systems(OnEnter(InGame), spawn_enemy_goal.after(spawn_grid));
+            .add_systems(OnEnter(AppState::Game), spawn_enemy_goal.after(spawn_grid));
     }
 }
 
