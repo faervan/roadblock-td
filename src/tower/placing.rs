@@ -4,7 +4,7 @@ use bevy::{input::common_conditions::input_just_pressed, prelude::*, window::Pri
 
 use crate::{
     Health, Orientation,
-    app_state::TowerPlacingState,
+    app_state::{GameState, TowerPlacingState},
     enemy::PathChangedEvent,
     grid::{COLUMNS, Grid, GridPos, ROWS, TILE_SIZE, grid_to_world_coords, world_to_grid_coords},
 };
@@ -22,7 +22,9 @@ impl Plugin for TowerPlacingPlugin {
             .add_systems(
                 Update,
                 (
-                    place_tower.run_if(input_just_pressed(MouseButton::Left)),
+                    place_tower
+                        .run_if(input_just_pressed(MouseButton::Left))
+                        .run_if(in_state(GameState::Running)),
                     change_rotation.run_if(input_just_pressed(KeyCode::KeyR)),
                     update_preview,
                     exit_tower_place_state.run_if(input_just_pressed(KeyCode::KeyQ)),

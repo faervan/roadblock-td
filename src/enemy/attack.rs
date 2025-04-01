@@ -1,11 +1,6 @@
 use bevy::prelude::*;
 
-use crate::{
-    Health,
-    app_state::{AppState, GameState},
-    grid::Grid,
-    tower::Tower,
-};
+use crate::{Health, app_state::GameState, grid::Grid, tower::Tower};
 
 use super::{Enemy, PathChangedEvent, goal::EnemyGoal};
 
@@ -20,7 +15,7 @@ impl Plugin for EnemyAttackPlugin {
                 enemy_attacking,
                 enemy_attacking_goal,
             )
-                .run_if(in_state(AppState::Game)),
+                .run_if(in_state(GameState::Running)),
         );
     }
 }

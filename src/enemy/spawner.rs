@@ -7,7 +7,7 @@ use bevy::{
 
 use crate::{
     Health, RngResource,
-    app_state::AppState,
+    app_state::{AppState, GameState},
     grid::{Grid, GridPos, grid_to_world_coords},
 };
 
@@ -22,7 +22,7 @@ impl Plugin for EnemySpawnerPlugin {
                 OnEnter(AppState::Game),
                 spawn_enemy_spawners.after(spawn_enemy_goal),
             )
-            .add_systems(Update, spawn_enemies.run_if(in_state(AppState::Game)));
+            .add_systems(Update, spawn_enemies.run_if(in_state(GameState::Running)));
     }
 }
 
