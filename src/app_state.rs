@@ -11,6 +11,8 @@ impl Plugin for AppStatePlugin {
             .add_computed_state::<InGame>()
             .add_computed_state::<GameOver>()
             .add_computed_state::<TowerPlacing>()
+            .add_sub_state::<MenuState>()
+            .add_systems(Startup, set_app_state)
             .add_systems(
                 Update,
                 escape_to_menu
@@ -21,8 +23,10 @@ impl Plugin for AppStatePlugin {
     }
 }
 
-#[derive(States, Debug, Hash, PartialEq, Eq, Clone)]
+#[derive(States, Debug, Default, Hash, PartialEq, Eq, Clone)]
 pub enum AppState {
+    #[default]
+    Loading,
     Menu,
     Game {
         game_over: bool,
@@ -31,15 +35,10 @@ pub enum AppState {
     },
 }
 
-impl Default for AppState {
-    fn default() -> Self {
-        /*AppState::Game {
-            game_over: false,
-            paused: false,
-            placing_tower: false,
-        }*/
-        AppState::Menu
-    }
+// https://github.com/bevyengine/bevy/discussions/17625#discussioncomment-12058159
+// Used this to fix a panic in soundtracks.rs
+fn set_app_state(mut next_state: ResMut<NextState<AppState>>) {
+    next_state.set(AppState::Menu);
 }
 
 impl AppState {
@@ -101,6 +100,14 @@ impl ComputedStates for TowerPlacing {
             _ => None,
         }
     }
+}
+
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash, SubStates)]
+#[source(AppState = AppState::Menu)]
+pub enum MenuState {
+    #[default]
+    MainMenu,
+    Settings,
 }
 
 pub fn set_tower_placing_state(

@@ -1,7 +1,4 @@
 # Art attributions
 
-*enemies/BODY_skeleton.png*:
+*enemies/\**:
 https://opengameart.org/content/lpc-medieval-fantasy-character-sprites
-
-*spawners/Asset 24.png*:
-https://opengameart.org/content/castle-game-objects

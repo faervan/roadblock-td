@@ -1,6 +1,7 @@
 use bevy::prelude::*;
 
 use crate::{
+    Settings,
     app_state::{AppState, InGame, set_tower_placing_state},
     tower::{SelectedTower, Tower, TowerType},
 };
@@ -83,11 +84,17 @@ fn handle_buttons(
     mut selection: ResMut<SelectedTower>,
     current_state: Res<State<AppState>>,
     mut next_state: ResMut<NextState<AppState>>,
+    asset_server: Res<AssetServer>,
+    mut commands: Commands,
+    settings: Res<Settings>,
 ) {
     for (interaction, tower, mut color) in button.iter_mut() {
         match interaction {
             Interaction::Hovered => *color = BackgroundColor(BUTTON_HOVER_COLOR),
             Interaction::Pressed => {
+                if settings.sfx_enabled {
+                    commands.spawn(AudioPlayer::new(asset_server.load("sfx/Cloud Click.ogg")));
+                }
                 *color = BackgroundColor(BUTTON_PRESS_COLOR);
                 selection.0 = Tower::new(tower.0, selection.orientation);
                 set_tower_placing_state(&current_state, &mut next_state);
