@@ -9,7 +9,8 @@ pub struct PausedPlugin;
 
 impl Plugin for PausedPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(OnEnter(GameState::Paused), build_paused_info)
+        app.register_type::<PausedMarker>()
+            .add_systems(OnEnter(GameState::Paused), build_paused_info)
             .add_systems(OnExit(GameState::Paused), despawn_menu::<PausedMarker>)
             .add_systems(
                 Update,

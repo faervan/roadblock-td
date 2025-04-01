@@ -19,6 +19,7 @@ impl Plugin for TowerPlacingPlugin {
             .insert_resource(SelectedTower(Tower::new(TowerType::Wall, Orientation::Up)))
             .add_systems(OnEnter(TowerPlacingState::Placing), spawn_preview)
             .add_systems(OnExit(TowerPlacingState::Placing), despawn_preview)
+            .add_systems(OnEnter(GameState::GameOver), exit_tower_place_state)
             .add_systems(
                 Update,
                 (

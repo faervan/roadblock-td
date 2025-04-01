@@ -4,6 +4,7 @@ use attack::TowerAttackPlugin;
 use bevy::prelude::*;
 use placing::TowerPlacingPlugin;
 
+pub use attack::projectile_damage;
 pub use placing::{SelectedTower, place_tower};
 
 use crate::{

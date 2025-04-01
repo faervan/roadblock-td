@@ -96,7 +96,6 @@ fn enemy_attacking_goal(
         ***goal_health -= enemy.damage();
         if ***goal_health <= 0 {
             next_state.set(GameState::GameOver);
-            info!("GAMEOVER!!");
         }
     }
 }

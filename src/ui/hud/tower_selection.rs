@@ -2,7 +2,7 @@ use bevy::prelude::*;
 
 use crate::{
     Settings,
-    app_state::{AppState, TowerPlacingState},
+    app_state::{AppState, GameState, TowerPlacingState},
     tower::{SelectedTower, Tower, TowerType},
 };
 
@@ -12,7 +12,12 @@ impl Plugin for TowerSelectionPlugin {
     fn build(&self, app: &mut App) {
         app.register_type::<TowerButton>();
         app.add_systems(OnEnter(AppState::Game), init_ui);
-        app.add_systems(Update, handle_buttons.run_if(in_state(AppState::Game)));
+        app.add_systems(
+            Update,
+            handle_buttons
+                .run_if(in_state(AppState::Game))
+                .run_if(not(in_state(GameState::GameOver))),
+        );
     }
 }
 

@@ -3,6 +3,7 @@ use bevy::{audio::AudioPlugin, prelude::*};
 use bevy_inspector_egui::quick::WorldInspectorPlugin;
 use enemy::EnemyPlugin;
 use fastrand::Rng;
+use game_loop::GameLoopPlugin;
 use grid::GridPlugin;
 use map::MapPlugin;
 use soundtrack::SoundtrackPlugin;
@@ -12,6 +13,7 @@ use ui::UIPlugin;
 mod animation;
 mod app_state;
 mod enemy;
+mod game_loop;
 mod grid;
 mod map;
 mod soundtrack;
@@ -61,6 +63,7 @@ fn main() {
         animation::AnimationPlugin,
         AppStatePlugin,
         EnemyPlugin,
+        GameLoopPlugin,
         GridPlugin,
         MapPlugin,
         SoundtrackPlugin,

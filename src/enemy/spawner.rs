@@ -41,10 +41,20 @@ enum EnemySpawnType {
 
 impl EnemySpawn {
     fn new(variant: EnemySpawnType, pos: GridPos) -> Self {
+        use std::env::args;
+        let spawn_interval = args()
+            .position(|a| a == "--spawn_interval")
+            .and_then(|pos| {
+                let mut args = args();
+                args.nth(pos);
+                args.next()
+            })
+            .and_then(|count| count.parse::<u64>().ok())
+            .unwrap_or(8);
         Self {
             variant,
             pos,
-            timer: Timer::new(Duration::from_secs(8), TimerMode::Repeating),
+            timer: Timer::new(Duration::from_secs(spawn_interval), TimerMode::Repeating),
         }
     }
 
@@ -120,7 +130,18 @@ fn spawn_enemy_spawners(
     let mut origin_tiles = HashMap::new();
     let mut other_tiles = HashSet::new();
 
-    while origin_tiles.len() != 5 {
+    use std::env::args;
+    let spawner_count = args()
+        .position(|a| a == "--spawners")
+        .and_then(|pos| {
+            let mut args = args();
+            args.nth(pos);
+            args.next()
+        })
+        .and_then(|count| count.parse::<usize>().ok())
+        .unwrap_or(5);
+
+    while origin_tiles.len() != spawner_count {
         let grid_pos = GridPos::random(&mut rng);
 
         let spawner = EnemySpawn::new(EnemySpawnType::RedTower, grid_pos);

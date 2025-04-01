@@ -1,6 +1,8 @@
 use bevy::{color::palettes::css::RED, prelude::*};
 
-use crate::{Health, app_state::GameState, enemy::Enemy, grid::TILE_SIZE};
+use crate::{
+    Health, app_state::GameState, enemy::Enemy, game_loop::GameStatistics, grid::TILE_SIZE,
+};
 
 use super::Tower;
 
@@ -19,7 +21,7 @@ impl Plugin for TowerAttackPlugin {
 #[derive(Reflect, Component)]
 #[reflect(Component)]
 #[require(Transform)]
-struct Projectile {
+pub struct Projectile {
     speed: f32,
     damage: isize,
     target: Entity,
@@ -98,15 +100,16 @@ fn move_projectile(
                 .move_towards(target.translation, projectile.speed * time.delta_secs());
         } else {
             warn!("target enemy no longer exists, despawning projectile");
-            commands.get_entity(entity).unwrap().despawn_recursive();
+            commands.entity(entity).despawn_recursive();
         }
     }
 }
 
-fn projectile_damage(
+pub fn projectile_damage(
     mut commands: Commands,
     projectile: Query<(&Transform, &Projectile, Entity)>,
     mut enemy: Query<(&Transform, &mut Health, Entity), With<Enemy>>,
+    mut stats: ResMut<GameStatistics>,
 ) {
     for (projectile_transform, projectile, projectile_entity) in projectile.iter() {
         for (enemy_transform, mut health, enemy_entity) in enemy.iter_mut() {
@@ -117,15 +120,10 @@ fn projectile_damage(
             {
                 health.0 -= projectile.damage;
                 if health.0 <= 0 {
-                    commands
-                        .get_entity(enemy_entity)
-                        .unwrap()
-                        .despawn_recursive();
+                    commands.entity(enemy_entity).despawn_recursive();
+                    stats.enemies_killed += 1;
                 }
-                commands
-                    .get_entity(projectile_entity)
-                    .unwrap()
-                    .despawn_recursive();
+                commands.entity(projectile_entity).despawn_recursive();
             }
         }
     }

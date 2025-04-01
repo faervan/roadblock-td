@@ -6,7 +6,7 @@ use crate::{
     app_state::GameState,
     enemy::Enemy,
     grid::{Grid, GridPos, TILE_SIZE, grid_to_world_coords},
-    tower::{Tower, place_tower},
+    tower::{Tower, place_tower, projectile_damage},
 };
 
 use super::attack::{Attacking, AttackingGoal};
@@ -24,7 +24,7 @@ impl Plugin for EnemyMovementPlugin {
                         .run_if(on_event::<PathChangedEvent>)
                         .after(place_tower),
                     enemy_get_path.after(check_for_broken_paths),
-                    move_enemies,
+                    move_enemies.before(projectile_damage),
                 )
                     .run_if(in_state(GameState::Running)),
             );

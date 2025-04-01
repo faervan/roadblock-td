@@ -8,20 +8,24 @@ pub struct MainMenuPlugin;
 
 impl Plugin for MainMenuPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(OnEnter(MenuState::MainMenu), build_main_menu)
+        app.register_type::<MainMenuAction>()
+            .register_type::<MainMenuMarker>()
+            .add_systems(OnEnter(MenuState::MainMenu), build_main_menu)
             .add_systems(OnExit(MenuState::MainMenu), despawn_menu::<MainMenuMarker>)
             .add_systems(Update, menu_action.run_if(in_state(MenuState::MainMenu)));
     }
 }
 
-#[derive(Component)]
+#[derive(Component, Reflect)]
+#[reflect(Component)]
 enum MainMenuAction {
     Play,
     OpenSettings,
     Quit,
 }
 
-#[derive(Component)]
+#[derive(Component, Reflect)]
+#[reflect(Component)]
 struct MainMenuMarker;
 
 const BUTTON_WIDTH: f32 = 300.;
