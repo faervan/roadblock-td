@@ -86,7 +86,7 @@ fn enemy_attacking(
             **enemy_health -= tower.contact_damage();
 
             if **enemy_health <= 0 {
-                currency.0 += enemy.reward();
+                **currency += enemy.reward();
                 commands.entity(entity).despawn_recursive();
 
                 return;

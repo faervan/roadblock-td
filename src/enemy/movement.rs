@@ -320,6 +320,8 @@ pub fn move_enemies(
             }
         };
         let direction = next - pos.translation;
+        // The enemy should never move on the Z axis
+        assert_eq!(direction.z, 0.);
         pos.translation += direction.normalize() * time.delta_secs() * enemy.velocity();
         if pos.translation.distance(next) >= direction.length() {
             path.next = None;
