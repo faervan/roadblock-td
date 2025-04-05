@@ -1,9 +1,9 @@
 use bevy::prelude::*;
 
 use crate::{
-    Health,
     app_state::AppState,
     grid::{COLUMNS, Grid, GridPos, ROWS, grid_to_world_coords, spawn_grid},
+    health::{Health, NoHealthBar},
 };
 
 pub struct EnemyGoalPlugin;
@@ -15,7 +15,7 @@ impl Plugin for EnemyGoalPlugin {
     }
 }
 
-#[derive(Reflect, Component, Clone, Copy)]
+#[derive(Reflect, Component, Clone, Copy, Debug)]
 #[reflect(Component)]
 pub enum EnemyGoal {
     Heart,
@@ -99,7 +99,9 @@ pub fn spawn_enemy_goal(
     let goal = EnemyGoal::Heart;
     let entity = commands
         .spawn((
-            Health(goal.max_hp()),
+            Name::new(format!("EnemyGoal: {goal:?}")),
+            Health::new(goal.max_hp(), Vec2::ZERO),
+            NoHealthBar,
             Sprite::from_image(asset_server.load(goal.sprite())),
             Transform {
                 translation: grid_to_world_coords(grid_pos).extend(1.0) + goal.offset(),

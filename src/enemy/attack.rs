@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 
-use crate::{Health, app_state::GameState, grid::Grid, tower::Tower};
+use crate::{app_state::GameState, grid::Grid, health::Health, tower::Tower};
 
 use super::{Enemy, PathChangedEvent, goal::EnemyGoal};
 
@@ -17,12 +17,29 @@ impl Plugin for EnemyAttackPlugin {
             )
                 .run_if(in_state(GameState::Running)),
         );
+        app.world_mut()
+            .register_component_hooks::<Attacking>()
+            .on_remove(|mut world, entity, _| {
+                let weapon_id = world.get::<Attacking>(entity).unwrap().weapon_id;
+                if let Some(mut entity_cmds) = world.commands().get_entity(weapon_id) {
+                    entity_cmds.despawn();
+                }
+            });
     }
 }
 
-#[derive(Component, Reflect, Deref)]
+#[derive(Component, Reflect)]
 #[reflect(Component)]
-pub struct Attacking(pub Entity);
+pub struct Attacking {
+    target: Entity,
+    weapon_id: Entity,
+}
+
+impl Attacking {
+    pub fn new(target: Entity, weapon_id: Entity) -> Self {
+        Attacking { target, weapon_id }
+    }
+}
 
 #[derive(Component, Reflect)]
 #[reflect(Component)]
@@ -43,35 +60,31 @@ fn enemy_attacking(
     mut texture_atlas_layouts: ResMut<Assets<TextureAtlasLayout>>,
     mut event_writer: EventWriter<PathChangedEvent>,
 ) {
-    for (mut enemy, target, entity) in &mut enemies {
+    for (mut enemy, attacking, entity) in &mut enemies {
         if !enemy.attack_timer.finished() {
             continue;
         }
         enemy.attack_timer.reset();
 
-        if let Ok((mut health, tower)) = towers.get_mut(**target) {
-            health.0 -= enemy.damage();
+        if let Ok((mut health, tower)) = towers.get_mut(attacking.target) {
+            **health -= enemy.damage();
 
-            if health.0 <= 0 {
-                commands.entity(**target).despawn_recursive();
+            if **health <= 0 {
+                commands.entity(attacking.target).despawn_recursive();
                 event_writer.send(PathChangedEvent::now_free(
-                    tower.clear_grid(&mut grid, **target),
+                    tower.clear_grid(&mut grid, attacking.target),
                 ));
             }
         }
 
-        commands
-            .entity(entity)
-            .remove::<Attacking>()
-            .insert((
-                enemy.walk_animation_config(),
-                Sprite {
-                    image: asset_server.load(enemy.walk_sprites()),
-                    texture_atlas: Some(enemy.walk_layout(&mut texture_atlas_layouts)),
-                    ..Default::default()
-                },
-            ))
-            .despawn_descendants();
+        commands.entity(entity).remove::<Attacking>().insert((
+            enemy.walk_animation_config(),
+            Sprite {
+                image: asset_server.load(enemy.walk_sprites()),
+                texture_atlas: Some(enemy.walk_layout(&mut texture_atlas_layouts)),
+                ..Default::default()
+            },
+        ));
     }
 }
 

@@ -2,16 +2,18 @@ use std::time::Duration;
 
 use attack::EnemyAttackPlugin;
 use bevy::{input::common_conditions::input_just_pressed, prelude::*, window::PrimaryWindow};
+pub use goal::EnemyGoal;
 use goal::EnemyGoalPlugin;
 use movement::EnemyMovementPlugin;
 pub use movement::PathChangedEvent;
 use spawner::EnemySpawnerPlugin;
 
 use crate::{
-    Health, Orientation,
+    Orientation,
     animation::AnimationConfig,
     app_state::AppState,
     grid::{Grid, GridPos, grid_to_world_coords, world_to_grid_coords},
+    health::Health,
 };
 
 mod attack;
@@ -49,7 +51,7 @@ pub struct Enemy {
     attack_timer: Timer,
 }
 
-#[derive(Reflect)]
+#[derive(Reflect, Debug)]
 pub enum EnemyType {
     Skeleton,
 }
@@ -194,6 +196,12 @@ impl EnemyType {
         }
     }
 
+    fn health_bar_offset(&self) -> Vec2 {
+        match self {
+            EnemyType::Skeleton => Vec2::new(0., 25.),
+        }
+    }
+
     fn scale(&self) -> Vec3 {
         match self {
             EnemyType::Skeleton => Vec3::splat(0.6),
@@ -221,7 +229,8 @@ fn spawn_enemies_manual(
                 if grid.is_free(&grid_pos) {
                     let enemy = Enemy::new(grid_pos, EnemyType::Skeleton);
                     commands.spawn((
-                        Health(enemy.max_hp()),
+                        Name::new(format!("Enemy: {:?} (manually spawned)", enemy.variant)),
+                        Health::new(enemy.max_hp(), enemy.health_bar_offset()),
                         Sprite {
                             image: asset_server.load(enemy.walk_sprites()),
                             texture_atlas: Some(enemy.walk_layout(&mut texture_atlas_layouts)),

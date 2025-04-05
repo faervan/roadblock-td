@@ -6,9 +6,10 @@ use bevy::{
 };
 
 use crate::{
-    Health, RngResource,
+    RngResource,
     app_state::{AppState, GameState},
     grid::{Grid, GridPos, grid_to_world_coords},
+    health::Health,
 };
 
 use super::{Enemy, EnemyType, goal::spawn_enemy_goal};
@@ -162,6 +163,7 @@ fn spawn_enemy_spawners(
 
         let entity = commands
             .spawn((
+                Name::new(format!("Spawner: {:?}", spawner.variant)),
                 Sprite::from_image(asset_server.load(spawner.sprite())),
                 Transform {
                     translation: grid_to_world_coords(pos).extend(1.) + spawner.offset(),
@@ -195,7 +197,8 @@ fn spawn_enemies(
         let enemy = Enemy::new(spawner.pos, EnemyType::Skeleton);
 
         commands.spawn((
-            Health(enemy.max_hp()),
+            Name::new(format!("Enemy: {:?}", enemy.variant)),
+            Health::new(enemy.max_hp(), enemy.health_bar_offset()),
             Sprite {
                 image: asset_server.load(enemy.walk_sprites()),
                 texture_atlas: Some(enemy.walk_layout(&mut texture_atlas_layouts)),

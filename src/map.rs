@@ -1,6 +1,9 @@
 use bevy::{input::mouse::AccumulatedMouseMotion, prelude::*, window::PrimaryWindow};
 
-use crate::app_state::{AppState, GameState};
+use crate::{
+    CAMERA_POS,
+    app_state::{AppState, GameState},
+};
 
 const BACKGROUND_COLOR: Color = Color::hsl(150., 1., 0.4);
 
@@ -33,6 +36,7 @@ fn init(mut commands: Commands) {
     let map_anchor = Vec2::new(-map_size.x / 2., -map_size.y / 2.);
 
     commands.spawn((
+        Name::new("Map"),
         Sprite::from_color(BACKGROUND_COLOR, map_size),
         Transform::from_translation(Vec3::new(
             map_anchor.x + map_size.x / 2.,
@@ -47,7 +51,7 @@ fn init(mut commands: Commands) {
 }
 
 fn exit(mut commands: Commands, mut camera: Single<&mut Transform, With<Camera>>) {
-    camera.translation = Vec3::ZERO;
+    camera.translation = CAMERA_POS;
     commands.remove_resource::<MapInfo>();
 }
 
@@ -72,7 +76,9 @@ fn pan_camera(
         a_pressed.then(|| direction.x -= 1.);
         s_pressed.then(|| direction.y -= 1.);
         d_pressed.then(|| direction.x += 1.);
-        camera.translation += direction.normalize() * time.delta_secs() * 500.;
+        if direction.length() > 0. {
+            camera.translation += direction.normalize() * time.delta_secs() * 500.;
+        }
     } else if mouse_input.pressed(MouseButton::Middle) && motion.delta != Vec2::ZERO {
         camera.translation.x -= motion.delta.x;
         camera.translation.y += motion.delta.y;

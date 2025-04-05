@@ -84,7 +84,11 @@ fn build_game_over_info(mut commands: Commands, stats: Res<GameStatistics>) {
                 stat_row(
                     p,
                     "Time elapsed:",
-                    format!("{}sec", stats.time.elapsed_secs().round()),
+                    format!(
+                        "{}min {}sec",
+                        (stats.time.elapsed_secs() / 60.).round(),
+                        (stats.time.elapsed_secs() % 60.).round()
+                    ),
                 );
                 stat_row(p, "Enemies killed:", stats.enemies_killed);
             });

@@ -1,9 +1,10 @@
 use bevy::prelude::*;
+use bevy_lunex::{Dimension, UiLunexPlugins};
 use hud::HUDPlugin;
 use main_menu::MainMenuPlugin;
 use settings::SettingsMenuPlugin;
 
-use crate::{Settings, app_state::AppState};
+use crate::Settings;
 
 mod hud;
 mod main_menu;
@@ -19,8 +20,10 @@ pub struct UIPlugin;
 
 impl Plugin for UIPlugin {
     fn build(&self, app: &mut App) {
-        app.add_plugins((MainMenuPlugin, HUDPlugin, SettingsMenuPlugin))
-            .add_systems(Update, button_interaction.run_if(in_state(AppState::Menu)));
+        app.register_type::<Dimension>()
+            .add_plugins(UiLunexPlugins)
+            .add_plugins((MainMenuPlugin, HUDPlugin, SettingsMenuPlugin))
+            .add_systems(Update, button_interaction);
     }
 }
 

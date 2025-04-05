@@ -1,7 +1,7 @@
 use bevy::{color::palettes::css::RED, prelude::*};
 
 use crate::{
-    Health, app_state::GameState, enemy::Enemy, game_loop::GameStatistics, grid::TILE_SIZE,
+    app_state::GameState, enemy::Enemy, game_loop::GameStatistics, grid::TILE_SIZE, health::Health,
 };
 
 use super::Tower;
@@ -62,6 +62,7 @@ fn shoot(
         if let Some(closest) = closest_enemy {
             tower.attack_timer.reset();
             commands.spawn((
+                Name::new("Projectile"),
                 Mesh2d(meshes.add(Circle::new(5.0))),
                 MeshMaterial2d(materials.add(ColorMaterial::from_color(RED))),
                 Projectile {
@@ -118,8 +119,8 @@ pub fn projectile_damage(
                 .distance(enemy_transform.translation)
                 < TILE_SIZE * 0.5
             {
-                health.0 -= projectile.damage;
-                if health.0 <= 0 {
+                **health -= projectile.damage;
+                if **health <= 0 {
                     commands.entity(enemy_entity).despawn_recursive();
                     stats.enemies_killed += 1;
                 }

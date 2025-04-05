@@ -6,6 +6,7 @@ edition = "2024"
 [dependencies]
 bevy = { version = "0.15.3", features = ["wayland"] }
 bevy-inspector-egui = "0.30.0"
+bevy_lunex = "0.3.2"
 fastrand = "2.3.0"
 
 # Enable a small amount of optimization in the dev profile.

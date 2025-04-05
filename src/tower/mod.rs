@@ -33,7 +33,7 @@ pub struct Tower {
     pub orientation: Orientation,
 }
 
-#[derive(Reflect, Clone, Copy)]
+#[derive(Reflect, Clone, Copy, Debug)]
 pub enum TowerType {
     Wall,
     SpikedWall,
@@ -86,6 +86,16 @@ impl Tower {
         match self.orientation.is_horizontal() {
             true => (size.1, size.0),
             false => size,
+        }
+    }
+
+    fn health_bar_offset(&self) -> Vec2 {
+        match self.variant {
+            TowerType::Wall | TowerType::SpikedWall => match self.orientation.is_horizontal() {
+                true => Vec2::new(13., 50.),
+                false => Vec2::new(50., 13.),
+            },
+            TowerType::Canon => Vec2::splat(38.),
         }
     }
 }

@@ -59,6 +59,7 @@ pub fn spawn_grid(mut commands: Commands) {
     for column in 0..=COLUMNS {
         let x = position(COLUMNS as f32, column as f32);
         commands.spawn((
+            Name::new(format!("Grid column border: {column}")),
             Sprite::from_color(
                 GRID_COLOR,
                 Vec2 {
@@ -80,6 +81,7 @@ pub fn spawn_grid(mut commands: Commands) {
     for row in 0..=ROWS {
         let y = position(ROWS as f32, row as f32);
         commands.spawn((
+            Name::new(format!("Grid row border: {row}")),
             Sprite::from_color(
                 GRID_COLOR,
                 Vec2 {

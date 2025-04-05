@@ -3,10 +3,11 @@ use std::ops::{Deref, DerefMut};
 use bevy::{input::common_conditions::input_just_pressed, prelude::*, window::PrimaryWindow};
 
 use crate::{
-    Health, Orientation,
+    Orientation,
     app_state::{GameState, TowerPlacingState},
     enemy::PathChangedEvent,
     grid::{COLUMNS, Grid, GridPos, ROWS, TILE_SIZE, grid_to_world_coords, world_to_grid_coords},
+    health::Health,
 };
 
 use super::{Tower, TowerType};
@@ -63,7 +64,7 @@ pub fn place_tower(
     mut commands: Commands,
     mut event_writer: EventWriter<PathChangedEvent>,
     window: Single<&Window, With<PrimaryWindow>>,
-    cam: Single<(&Camera, &GlobalTransform)>,
+    cam: Single<(&Camera, &GlobalTransform), With<Camera>>,
     input: Res<ButtonInput<KeyCode>>,
     mut next_state: ResMut<NextState<TowerPlacingState>>,
     mut grid: ResMut<Grid>,
@@ -101,7 +102,11 @@ pub fn place_tower(
 
                 let entity = commands
                     .spawn((
-                        Health(tower.max_hp()),
+                        Name::new(format!(
+                            "Tower: {:?} ({:?})",
+                            tower.variant, tower.orientation
+                        )),
+                        Health::new(tower.max_hp(), tower.health_bar_offset()),
                         tower.0.clone(),
                         Sprite {
                             color: Color::srgb(0.0, 0.5, 1.0),
@@ -145,6 +150,7 @@ fn change_rotation(mut selection: ResMut<SelectedTower>) {
 
 fn spawn_preview(mut commands: Commands) {
     commands.spawn((
+        Name::new("TowerPreview"),
         TowerPreview,
         Sprite {
             color: Color::srgb(0.0, 0.5, 1.0),
@@ -163,7 +169,7 @@ fn despawn_preview(mut commands: Commands, preview: Query<Entity, With<TowerPrev
 
 fn update_preview(
     window: Single<&Window, With<PrimaryWindow>>,
-    cam: Single<(&Camera, &GlobalTransform)>,
+    cam: Single<(&Camera, &GlobalTransform), With<Camera>>,
     grid: Res<Grid>,
     tower: Res<SelectedTower>,
     mut preview: Query<(&mut Sprite, &mut Transform, &mut Visibility), With<TowerPreview>>,

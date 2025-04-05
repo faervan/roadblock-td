@@ -1,10 +1,12 @@
 use app_state::AppStatePlugin;
 use bevy::{audio::AudioPlugin, prelude::*};
 use bevy_inspector_egui::quick::WorldInspectorPlugin;
+use bevy_lunex::UiSourceCamera;
 use enemy::EnemyPlugin;
 use fastrand::Rng;
 use game_loop::GameLoopPlugin;
 use grid::GridPlugin;
+use health::HealthPlugin;
 use map::MapPlugin;
 use soundtrack::SoundtrackPlugin;
 use tower::TowerPlugin;
@@ -15,6 +17,7 @@ mod app_state;
 mod enemy;
 mod game_loop;
 mod grid;
+mod health;
 mod map;
 mod soundtrack;
 mod tower;
@@ -44,7 +47,6 @@ fn main() {
         app.add_plugins(WorldInspectorPlugin::new());
     }
 
-    app.register_type::<Health>();
     app.register_type::<Settings>();
 
     app.insert_resource(RngResource(Rng::new()));
@@ -65,6 +67,7 @@ fn main() {
         EnemyPlugin,
         GameLoopPlugin,
         GridPlugin,
+        HealthPlugin,
         MapPlugin,
         SoundtrackPlugin,
         TowerPlugin,
@@ -120,12 +123,14 @@ impl Orientation {
     }
 }
 
-#[derive(Component, Reflect, Deref, DerefMut)]
-#[reflect(Component)]
-struct Health(isize);
-
+const CAMERA_POS: Vec3 = Vec3::new(0., 0., 900.);
 fn setup(mut commands: Commands) {
-    commands.spawn(Camera2d);
+    commands.spawn((
+        Name::new("MainCamera"),
+        Camera2d,
+        Transform::from_translation(CAMERA_POS),
+        UiSourceCamera::<0>,
+    ));
 }
 
 fn exit_on_ctrl_q(mut app_exit: EventWriter<AppExit>, input: Res<ButtonInput<KeyCode>>) {

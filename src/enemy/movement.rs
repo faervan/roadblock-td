@@ -1,11 +1,12 @@
 use bevy::{prelude::*, utils::HashMap};
 
 use crate::{
-    Health, Orientation,
+    Orientation,
     animation::AnimationConfig,
     app_state::GameState,
     enemy::Enemy,
     grid::{Grid, GridPos, TILE_SIZE, grid_to_world_coords},
+    health::Health,
     tower::{Tower, place_tower, projectile_damage},
 };
 
@@ -190,8 +191,7 @@ fn check_for_broken_paths(
             commands
                 .entity(entity)
                 .remove::<EnemyPath>()
-                .remove::<Attacking>()
-                .despawn_descendants();
+                .remove::<Attacking>();
         }
         return;
     }
@@ -250,21 +250,8 @@ pub fn move_enemies(
                     if orientation != enemy.orientation {
                         enemy.orientation = orientation;
                     }
-                    commands
-                        .entity(entity)
-                        .remove::<EnemyPath>()
-                        .insert((
-                            Attacking(*tower_entity),
-                            enemy.attack_animation_config(),
-                            Sprite {
-                                image: asset_server.load(enemy.attack_sprites()),
-                                texture_atlas: Some(
-                                    enemy.attack_layout(&mut texture_atlas_layouts),
-                                ),
-                                ..Default::default()
-                            },
-                        ))
-                        .with_child((
+                    let weapon_id = commands
+                        .spawn((
                             enemy.attack_animation_config(),
                             Sprite {
                                 image: asset_server.load(enemy.weapon_sprites()),
@@ -273,7 +260,19 @@ pub fn move_enemies(
                                 ),
                                 ..Default::default()
                             },
-                        ));
+                        ))
+                        .set_parent(entity)
+                        .id();
+
+                    commands.entity(entity).remove::<EnemyPath>().insert((
+                        Attacking::new(*tower_entity, weapon_id),
+                        enemy.attack_animation_config(),
+                        Sprite {
+                            image: asset_server.load(enemy.attack_sprites()),
+                            texture_atlas: Some(enemy.attack_layout(&mut texture_atlas_layouts)),
+                            ..Default::default()
+                        },
+                    ));
                     return;
                 } else if grid.enemy_goals.contains_key(&tile) {
                     if orientation != enemy.orientation {
