@@ -90,7 +90,7 @@ impl EnemyGoal {
     }
 }
 
-pub fn spawn_enemy_goal(
+fn spawn_enemy_goal(
     mut commands: Commands,
     mut grid: ResMut<Grid>,
     asset_server: Res<AssetServer>,

@@ -76,7 +76,7 @@ pub fn place_tower(
     let mouse_pos = window.cursor_position();
 
     if let Some(mouse_pos) = mouse_pos {
-        if currency.0 < tower.cost() {
+        if **currency < tower.cost() {
             return;
         }
 
@@ -132,7 +132,7 @@ pub fn place_tower(
                     ))
                     .id();
 
-                currency.0 -= tower.cost();
+                **currency -= tower.cost();
                 stats.money_spend += tower.cost();
 
                 event_writer.send(PathChangedEvent::now_blocked(
@@ -201,7 +201,7 @@ fn update_preview(
 
                 sprite.color = Color::srgb(0.0, 0.5, 1.0);
 
-                if currency.0 < tower.cost() {
+                if **currency < tower.cost() {
                     sprite.color = Color::srgb(1.0, 0.0, 0.0);
                 } else {
                     // Check if tiles are free

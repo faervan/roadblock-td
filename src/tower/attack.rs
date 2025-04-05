@@ -127,7 +127,7 @@ pub fn projectile_damage(
                 **health -= projectile.damage;
                 if **health <= 0 {
                     commands.entity(enemy_entity).despawn_recursive();
-                    currency.0 += enemy.reward();
+                    **currency += enemy.reward();
                     stats.enemies_killed += 1;
                     stats.money_earned += enemy.reward();
                 }

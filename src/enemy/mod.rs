@@ -51,7 +51,7 @@ pub struct Enemy {
     attack_timer: Timer,
 }
 
-#[derive(Reflect, Debug)]
+#[derive(Reflect, Debug, Clone, Copy)]
 pub enum EnemyType {
     Skeleton,
 }
@@ -66,12 +66,6 @@ impl Enemy {
             current,
             variant,
             orientation: Orientation::default(),
-        }
-    }
-
-    pub fn reward(&self) -> i32 {
-        match self.variant {
-            EnemyType::Skeleton => 10,
         }
     }
 
@@ -151,7 +145,13 @@ impl Enemy {
 impl EnemyType {
     fn max_hp(&self) -> isize {
         match self {
-            EnemyType::Skeleton => 25,
+            EnemyType::Skeleton => 35,
+        }
+    }
+
+    pub fn reward(&self) -> i32 {
+        match self {
+            EnemyType::Skeleton => 5,
         }
     }
 
@@ -169,12 +169,12 @@ impl EnemyType {
     }
 
     fn travel_cost(&self, tower_hp: isize) -> usize {
-        (tower_hp as f32 * self.attack_cooldown() / self.damage() as f32) as usize * 20
+        (tower_hp as f32 * self.attack_cooldown() / self.damage() as f32) as usize * 5
     }
 
     fn velocity(&self) -> f32 {
         match self {
-            EnemyType::Skeleton => 150.,
+            EnemyType::Skeleton => 80.,
         }
     }
 

@@ -1,13 +1,19 @@
 use bevy::{prelude::*, time::Stopwatch};
+use wave::WavePlugin;
 
 use crate::app_state::{AppState, GameState};
+
+pub use wave::{SpawnerInfo, WaveInfo, WaveStart, insert_wave_info};
+
+mod wave;
 
 pub struct GameLoopPlugin;
 
 impl Plugin for GameLoopPlugin {
     fn build(&self, app: &mut App) {
         app.register_type::<GameStatistics>()
-            .add_systems(OnEnter(AppState::Game), insert_resources)
+            .add_plugins(WavePlugin)
+            .add_systems(OnEnter(AppState::Game), insert_game_resources)
             .add_systems(
                 Update,
                 advance_stat_time.run_if(in_state(GameState::Running)),
@@ -24,13 +30,13 @@ pub struct GameStatistics {
     pub money_spend: i32,
 }
 
-#[derive(Reflect, Resource, Deref)]
+#[derive(Reflect, Resource, Deref, DerefMut)]
 #[reflect(Resource)]
-pub struct Currency(pub i32);
+pub struct Currency(i32);
 
-pub fn insert_resources(mut commands: Commands) {
+fn insert_game_resources(mut commands: Commands) {
     commands.insert_resource(GameStatistics::default());
-    commands.insert_resource(Currency(50));
+    commands.insert_resource(Currency(80));
 }
 
 fn advance_stat_time(time: Res<Time>, mut stats: ResMut<GameStatistics>) {

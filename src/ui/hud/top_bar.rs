@@ -5,7 +5,7 @@ use bevy_lunex::{
 
 use crate::{
     app_state::{AppState, GameState},
-    game_loop::Currency,
+    game_loop::{Currency, WaveInfo, WaveStart, insert_wave_info},
 };
 
 pub struct TopBarPlugin;
@@ -13,12 +13,23 @@ pub struct TopBarPlugin;
 impl Plugin for TopBarPlugin {
     fn build(&self, app: &mut App) {
         app.register_type::<CurrencyInfoMarker>()
-            .add_systems(OnEnter(AppState::Game), build_ui)
-            .add_systems(Update, update_currency.run_if(in_state(GameState::Running)));
+            .register_type::<WaveInfoMarker>()
+            .add_systems(OnEnter(AppState::Game), build_ui.after(insert_wave_info))
+            .add_systems(
+                Update,
+                (
+                    update_wave.run_if(on_event::<WaveStart>),
+                    update_currency.run_if(in_state(GameState::Running)),
+                ),
+            );
     }
 }
 
 const UI_INFO_BACKGROUND: Color = Color::srgba(0., 0., 0., 0.85);
+
+#[derive(Component, Reflect)]
+#[reflect(Component)]
+struct WaveInfoMarker;
 
 #[derive(Component, Reflect)]
 #[reflect(Component)]
@@ -28,6 +39,7 @@ fn build_ui(
     camera: Single<Entity, With<Camera>>,
     mut commands: Commands,
     mut materials: ResMut<Assets<ColorMaterial>>,
+    wave: Res<WaveInfo>,
 ) {
     commands
         .spawn((
@@ -55,9 +67,10 @@ fn build_ui(
                     MeshMaterial2d(materials.add(UI_INFO_BACKGROUND)),
                 ))
                 .with_child((
+                    WaveInfoMarker,
                     Transform::from_translation(Vec3::Z * 5.),
                     UiTextSize::from(Rh(5.)),
-                    Text2d::new("Wave ?/Infinite"),
+                    Text2d::new(format!("Wave 0/{}", wave.last)),
                 ));
                 ui.spawn((
                     Name::new("Currency info"),
@@ -77,6 +90,16 @@ fn build_ui(
             });
         })
         .set_parent(*camera);
+}
+
+fn update_wave(
+    mut wave_info: Single<&mut Text2d, With<WaveInfoMarker>>,
+    mut events: EventReader<WaveStart>,
+    wave: Res<WaveInfo>,
+) {
+    for new_wave in events.read() {
+        wave_info.0 = format!("Wave {}/{}", **new_wave, wave.last);
+    }
 }
 
 fn update_currency(

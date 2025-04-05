@@ -150,7 +150,7 @@ impl TowerType {
 
     fn fire_cooldown(&self) -> Duration {
         match self {
-            TowerType::Canon => Duration::from_secs(1),
+            TowerType::Canon => Duration::from_secs_f32(0.8),
             _ => Duration::ZERO,
         }
     }

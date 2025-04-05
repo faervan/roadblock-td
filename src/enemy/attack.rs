@@ -1,6 +1,12 @@
 use bevy::prelude::*;
 
-use crate::{app_state::GameState, game_loop::Currency, grid::Grid, health::Health, tower::Tower};
+use crate::{
+    app_state::GameState,
+    game_loop::{Currency, GameStatistics},
+    grid::Grid,
+    health::Health,
+    tower::Tower,
+};
 
 use super::{Enemy, PathChangedEvent, goal::EnemyGoal};
 
@@ -103,6 +109,7 @@ fn enemy_attacking_goal(
     mut commands: Commands,
     mut goal: Single<(&EnemyGoal, &mut Health), Without<Enemy>>,
     mut currency: ResMut<Currency>,
+    mut stats: ResMut<GameStatistics>,
     mut next_state: ResMut<NextState<GameState>>,
 ) {
     let (goal, goal_health) = (goal.0, &mut goal.1);
@@ -114,7 +121,9 @@ fn enemy_attacking_goal(
 
         **enemy_health -= goal.thorn_damage();
         if **enemy_health <= 0 {
-            currency.0 += enemy.reward();
+            **currency += enemy.reward();
+            stats.money_earned += enemy.reward();
+            stats.enemies_killed += 1;
             commands.entity(entity).despawn_recursive();
         }
 

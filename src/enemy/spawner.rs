@@ -1,38 +1,59 @@
 use std::time::Duration;
 
-use bevy::{
-    prelude::*,
-    utils::{HashMap, HashSet},
-};
+use bevy::prelude::*;
 
 use crate::{
     RngResource,
-    app_state::{AppState, GameState},
+    app_state::GameState,
+    game_loop::{SpawnerInfo, WaveInfo, WaveStart},
     grid::{Grid, GridPos, grid_to_world_coords},
     health::Health,
 };
 
-use super::{Enemy, EnemyType, goal::spawn_enemy_goal};
+use super::{Enemy, EnemyType};
 
 pub struct EnemySpawnerPlugin;
 
 impl Plugin for EnemySpawnerPlugin {
     fn build(&self, app: &mut App) {
         app.register_type::<EnemySpawn>()
+            .register_type::<SpawnQueue>()
             .add_systems(
-                OnEnter(AppState::Game),
-                spawn_enemy_spawners.after(spawn_enemy_goal),
-            )
-            .add_systems(Update, spawn_enemies.run_if(in_state(GameState::Running)));
+                Update,
+                (
+                    spawn_enemy_spawners.run_if(on_event::<WaveStart>),
+                    spawn_enemies.run_if(in_state(GameState::Running)),
+                ),
+            );
     }
 }
 
-#[derive(Reflect, Component, Debug)]
+#[derive(Reflect, Component)]
 #[reflect(Component)]
 struct EnemySpawn {
     variant: EnemySpawnType,
     pos: GridPos,
+    #[reflect(ignore)]
+    info: SpawnerInfo,
+}
+
+#[derive(Reflect, Component)]
+#[reflect(Component)]
+struct SpawnQueue {
+    enemies: Vec<EnemyType>,
     timer: Timer,
+}
+
+impl SpawnQueue {
+    fn new(info: &SpawnerInfo, wave: usize) -> Self {
+        Self {
+            enemies: (info.enemies)(wave),
+            timer: Timer::new(
+                Duration::from_secs_f32((info.interval)(wave)),
+                TimerMode::Repeating,
+            ),
+        }
+    }
 }
 
 #[derive(Reflect, Debug)]
@@ -41,22 +62,8 @@ enum EnemySpawnType {
 }
 
 impl EnemySpawn {
-    fn new(variant: EnemySpawnType, pos: GridPos) -> Self {
-        use std::env::args;
-        let spawn_interval = args()
-            .position(|a| a == "--spawn_interval")
-            .and_then(|pos| {
-                let mut args = args();
-                args.nth(pos);
-                args.next()
-            })
-            .and_then(|count| count.parse::<u64>().ok())
-            .unwrap_or(8);
-        Self {
-            variant,
-            pos,
-            timer: Timer::new(Duration::from_secs(spawn_interval), TimerMode::Repeating),
-        }
+    fn new(variant: EnemySpawnType, pos: GridPos, info: SpawnerInfo) -> Self {
+        Self { variant, pos, info }
     }
 
     /// Returns all the tiles that belong to the spawner, relative to the "origin tile"
@@ -123,78 +130,82 @@ impl EnemySpawn {
 }
 
 fn spawn_enemy_spawners(
+    mut event: EventReader<WaveStart>,
     mut commands: Commands,
     mut grid: ResMut<Grid>,
     asset_server: Res<AssetServer>,
     mut rng: ResMut<RngResource>,
+    spawner_query: Query<(Entity, &EnemySpawn)>,
 ) {
-    let mut origin_tiles = HashMap::new();
-    let mut other_tiles = HashSet::new();
+    let Some(wave) = event.read().next() else {
+        error!("Failed to read WaveStart event!");
+        return;
+    };
 
-    use std::env::args;
-    let spawner_count = args()
-        .position(|a| a == "--spawners")
-        .and_then(|pos| {
-            let mut args = args();
-            args.nth(pos);
-            args.next()
-        })
-        .and_then(|count| count.parse::<usize>().ok())
-        .unwrap_or(5);
+    for info in &wave.new_spawners {
+        loop {
+            let grid_pos = GridPos::random(&mut rng);
 
-    while origin_tiles.len() != spawner_count {
-        let grid_pos = GridPos::random(&mut rng);
+            let spawner = EnemySpawn::new(EnemySpawnType::RedTower, grid_pos, *info);
+            let other = spawner.other_tiles();
 
-        let spawner = EnemySpawn::new(EnemySpawnType::RedTower, grid_pos);
-        let other = spawner.other_tiles();
+            if spawner.pos.distance_to_closest(&grid.enemy_goals) < 35
+                || other.iter().any(|pos| !grid.is_free(pos))
+            {
+                continue;
+            }
 
-        if spawner.pos.distance_to_closest(&grid.enemy_goals) >= 20
-            && !other.iter().any(|pos| other_tiles.contains(pos))
-            && !other_tiles.contains(&spawner.pos)
-        {
-            origin_tiles.insert(grid_pos, spawner);
-            other_tiles.extend(other);
+            spawner.add_unbuildable_surroundings(&mut grid);
+
+            let entity = commands
+                .spawn((
+                    Name::new(format!("Spawner: {:?}", spawner.variant)),
+                    Sprite::from_image(asset_server.load(spawner.sprite())),
+                    Transform {
+                        translation: grid_to_world_coords(grid_pos).extend(1.) + spawner.offset(),
+                        scale: spawner.scale(),
+                        ..Default::default()
+                    },
+                    spawner,
+                    SpawnQueue::new(info, **wave),
+                ))
+                .id();
+
+            grid.enemy_spawners.insert(grid_pos, entity);
+            for tile in other.into_iter() {
+                grid.enemy_spawners.insert(tile, entity);
+            }
+            break;
         }
     }
 
-    for (pos, spawner) in origin_tiles.into_iter() {
-        let other = spawner.other_tiles();
-        spawner.add_unbuildable_surroundings(&mut grid);
-
-        let entity = commands
-            .spawn((
-                Name::new(format!("Spawner: {:?}", spawner.variant)),
-                Sprite::from_image(asset_server.load(spawner.sprite())),
-                Transform {
-                    translation: grid_to_world_coords(pos).extend(1.) + spawner.offset(),
-                    scale: spawner.scale(),
-                    ..Default::default()
-                },
-                spawner,
-            ))
-            .id();
-
-        grid.enemy_spawners.insert(pos, entity);
-        for tile in other.into_iter() {
-            grid.enemy_spawners.insert(tile, entity);
-        }
+    for (entity, spawner) in &spawner_query {
+        commands
+            .entity(entity)
+            .insert(SpawnQueue::new(&spawner.info, **wave));
     }
 }
 
 fn spawn_enemies(
     mut commands: Commands,
     time: Res<Time>,
-    mut spawners: Query<&mut EnemySpawn>,
+    mut spawners: Query<(Entity, &EnemySpawn, &mut SpawnQueue)>,
     asset_server: Res<AssetServer>,
     mut texture_atlas_layouts: ResMut<Assets<TextureAtlasLayout>>,
+    mut wave: ResMut<WaveInfo>,
 ) {
-    for mut spawner in &mut spawners {
-        spawner.timer.tick(time.delta());
-        if !spawner.timer.finished() {
+    for (entity, spawner, mut queue) in &mut spawners {
+        queue.timer.tick(time.delta());
+        if !queue.timer.just_finished() {
             continue;
         }
 
-        let enemy = Enemy::new(spawner.pos, EnemyType::Skeleton);
+        let Some(enemy_ty) = queue.enemies.pop() else {
+            commands.entity(entity).remove::<SpawnQueue>();
+            wave.done_this_wave += 1;
+            return;
+        };
+        let enemy = Enemy::new(spawner.pos, enemy_ty);
 
         commands.spawn((
             Name::new(format!("Enemy: {:?}", enemy.variant)),
