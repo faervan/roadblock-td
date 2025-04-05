@@ -52,15 +52,16 @@ fn advance_enemy_attack_timers(mut enemies: Query<&mut Enemy>, time: Res<Time>) 
 }
 
 fn enemy_attacking(
-    mut enemies: Query<(&mut Enemy, &Attacking, Entity)>,
-    mut towers: Query<(&mut Health, &Tower)>,
+    mut enemies: Query<(&mut Enemy, &Attacking, Entity, &mut Health)>,
+    mut towers: Query<(&mut Health, &Tower), Without<Enemy>>,
+    mut currency: ResMut<Currency>,
     mut commands: Commands,
     mut grid: ResMut<Grid>,
     asset_server: Res<AssetServer>,
     mut texture_atlas_layouts: ResMut<Assets<TextureAtlasLayout>>,
     mut event_writer: EventWriter<PathChangedEvent>,
 ) {
-    for (mut enemy, attacking, entity) in &mut enemies {
+    for (mut enemy, attacking, entity, mut enemy_health) in &mut enemies {
         if !enemy.attack_timer.finished() {
             continue;
         }
@@ -74,6 +75,15 @@ fn enemy_attacking(
                 event_writer.send(PathChangedEvent::now_free(
                     tower.clear_grid(&mut grid, attacking.target),
                 ));
+            }
+
+            **enemy_health -= tower.contact_damage();
+
+            if **enemy_health <= 0 {
+                currency.0 += enemy.reward();
+                commands.entity(entity).despawn_recursive();
+
+                return;
             }
         }
 

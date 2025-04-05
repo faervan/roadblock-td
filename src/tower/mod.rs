@@ -155,17 +155,10 @@ impl TowerType {
         }
     }
 
-    fn _contact_damage(&self) -> isize {
+    pub fn contact_damage(&self) -> isize {
         match self {
             TowerType::SpikedWall => 5,
             _ => 0,
-        }
-    }
-
-    fn _contact_damage_cooldown(&self) -> Duration {
-        match self {
-            TowerType::SpikedWall => Duration::from_secs(1),
-            _ => Duration::ZERO,
         }
     }
 }
