@@ -6,6 +6,7 @@ use crate::{
     Orientation,
     app_state::{GameState, TowerPlacingState},
     enemy::PathChangedEvent,
+    game_loop::Currency,
     grid::{COLUMNS, Grid, GridPos, ROWS, TILE_SIZE, grid_to_world_coords, world_to_grid_coords},
     health::Health,
 };
@@ -69,10 +70,15 @@ pub fn place_tower(
     mut next_state: ResMut<NextState<TowerPlacingState>>,
     mut grid: ResMut<Grid>,
     tower: Res<SelectedTower>,
+    mut currency: ResMut<Currency>,
 ) {
     let mouse_pos = window.cursor_position();
 
     if let Some(mouse_pos) = mouse_pos {
+        if currency.0 < tower.cost() {
+            return;
+        }
+
         let (camera, cam_transform) = *cam;
 
         let world_pos = camera.viewport_to_world_2d(cam_transform, mouse_pos);
@@ -125,6 +131,8 @@ pub fn place_tower(
                     ))
                     .id();
 
+                currency.0 -= tower.cost();
+
                 event_writer.send(PathChangedEvent::now_blocked(
                     tower.fill_grid(&grid_pos, &mut grid, entity),
                 ));
@@ -172,6 +180,7 @@ fn update_preview(
     cam: Single<(&Camera, &GlobalTransform), With<Camera>>,
     grid: Res<Grid>,
     tower: Res<SelectedTower>,
+    currency: Res<Currency>,
     mut preview: Query<(&mut Sprite, &mut Transform, &mut Visibility), With<TowerPreview>>,
 ) {
     let (mut sprite, mut transform, mut visibility) = preview.single_mut();
@@ -190,20 +199,27 @@ fn update_preview(
 
                 sprite.color = Color::srgb(0.0, 0.5, 1.0);
 
-                // Check if tiles are free
-                for i in 0..tower_size.0 {
-                    for j in 0..tower_size.1 {
-                        let pos = GridPos {
-                            col: grid_pos.col + i,
-                            row: grid_pos.row + j,
-                        };
-                        if !grid.is_free(&pos) {
-                            sprite.color = Color::srgb(1.0, 0.0, 0.0);
-                        }
+                if currency.0 < tower.cost() {
+                    sprite.color = Color::srgb(1.0, 0.0, 0.0);
+                } else {
+                    // Check if tiles are free
+                    for i in 0..tower_size.0 {
+                        for j in 0..tower_size.1 {
+                            let pos = GridPos {
+                                col: grid_pos.col + i,
+                                row: grid_pos.row + j,
+                            };
+                            if !grid.is_free(&pos) {
+                                sprite.color = Color::srgb(1.0, 0.0, 0.0);
+                            }
 
-                        if pos.col > COLUMNS - 1 || pos.col < 0 || pos.row > ROWS - 1 || pos.row < 0
-                        {
-                            sprite.color = Color::srgb(1.0, 0.0, 0.0);
+                            if pos.col > COLUMNS - 1
+                                || pos.col < 0
+                                || pos.row > ROWS - 1
+                                || pos.row < 0
+                            {
+                                sprite.color = Color::srgb(1.0, 0.0, 0.0);
+                            }
                         }
                     }
                 }

@@ -69,6 +69,12 @@ impl Enemy {
         }
     }
 
+    pub fn reward(&self) -> i32 {
+        match self.variant {
+            EnemyType::Skeleton => 10,
+        }
+    }
+
     fn walk_layout(&self, layouts: &mut Assets<TextureAtlasLayout>) -> TextureAtlas {
         match self.variant {
             EnemyType::Skeleton => TextureAtlas {

@@ -1,7 +1,11 @@
 use bevy::{color::palettes::css::RED, prelude::*};
 
 use crate::{
-    app_state::GameState, enemy::Enemy, game_loop::GameStatistics, grid::TILE_SIZE, health::Health,
+    app_state::GameState,
+    enemy::Enemy,
+    game_loop::{Currency, GameStatistics},
+    grid::TILE_SIZE,
+    health::Health,
 };
 
 use super::Tower;
@@ -109,11 +113,12 @@ fn move_projectile(
 pub fn projectile_damage(
     mut commands: Commands,
     projectile: Query<(&Transform, &Projectile, Entity)>,
-    mut enemy: Query<(&Transform, &mut Health, Entity), With<Enemy>>,
+    mut enemy: Query<(&Transform, &mut Health, Entity, &Enemy)>,
     mut stats: ResMut<GameStatistics>,
+    mut currency: ResMut<Currency>,
 ) {
     for (projectile_transform, projectile, projectile_entity) in projectile.iter() {
-        for (enemy_transform, mut health, enemy_entity) in enemy.iter_mut() {
+        for (enemy_transform, mut health, enemy_entity, enemy) in enemy.iter_mut() {
             if projectile_transform
                 .translation
                 .distance(enemy_transform.translation)
@@ -122,6 +127,7 @@ pub fn projectile_damage(
                 **health -= projectile.damage;
                 if **health <= 0 {
                     commands.entity(enemy_entity).despawn_recursive();
+                    currency.0 += enemy.reward();
                     stats.enemies_killed += 1;
                 }
                 commands.entity(projectile_entity).despawn_recursive();

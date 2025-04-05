@@ -126,6 +126,14 @@ impl TowerType {
         }
     }
 
+    fn cost(&self) -> i32 {
+        match self {
+            TowerType::Wall => 10,
+            TowerType::SpikedWall => 20,
+            TowerType::Canon => 50,
+        }
+    }
+
     fn range(&self) -> f32 {
         match self {
             TowerType::Canon => TILE_SIZE * 10.0,
