@@ -2,14 +2,13 @@ use bevy::prelude::*;
 use bevy_lunex::{Ab, Align, Rl, UiFetchFromCamera, UiLayout, UiLayoutRoot};
 use player_health::update_player_health;
 
-use crate::{app_state::AppState, tower::TowerType};
+use crate::app_state::AppState;
 
 pub struct BottomBarPlugin;
 
 impl Plugin for BottomBarPlugin {
     fn build(&self, app: &mut App) {
-        app.register_type::<BottomBarAction>()
-            .register_type::<player_health::PlayerHpCircle>()
+        app.register_type::<player_health::PlayerHpCircle>()
             .register_type::<player_health::PlayerHpTextMarker>()
             .add_systems(OnEnter(AppState::Game), build_ui)
             .add_systems(
@@ -19,12 +18,6 @@ impl Plugin for BottomBarPlugin {
     }
 }
 
-#[derive(Component, Reflect)]
-#[reflect(Component)]
-enum BottomBarAction {
-    TowerButton(TowerType),
-}
-#[inline]
 fn build_ui(
     camera: Single<Entity, With<Camera>>,
     mut commands: Commands,

@@ -6,7 +6,7 @@ use crate::{
     Orientation,
     app_state::{GameState, TowerPlacingState},
     enemy::PathChangedEvent,
-    game_loop::Currency,
+    game_loop::{Currency, GameStatistics},
     grid::{COLUMNS, Grid, GridPos, ROWS, TILE_SIZE, grid_to_world_coords, world_to_grid_coords},
     health::Health,
 };
@@ -71,6 +71,7 @@ pub fn place_tower(
     mut grid: ResMut<Grid>,
     tower: Res<SelectedTower>,
     mut currency: ResMut<Currency>,
+    mut stats: ResMut<GameStatistics>,
 ) {
     let mouse_pos = window.cursor_position();
 
@@ -132,6 +133,7 @@ pub fn place_tower(
                     .id();
 
                 currency.0 -= tower.cost();
+                stats.money_spend += tower.cost();
 
                 event_writer.send(PathChangedEvent::now_blocked(
                     tower.fill_grid(&grid_pos, &mut grid, entity),

@@ -129,6 +129,7 @@ pub fn projectile_damage(
                     commands.entity(enemy_entity).despawn_recursive();
                     currency.0 += enemy.reward();
                     stats.enemies_killed += 1;
+                    stats.money_earned += enemy.reward();
                 }
                 commands.entity(projectile_entity).despawn_recursive();
             }
