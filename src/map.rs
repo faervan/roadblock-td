@@ -1,9 +1,10 @@
-use bevy::{input::mouse::AccumulatedMouseMotion, prelude::*, window::PrimaryWindow};
-
-use crate::{
-    CAMERA_POS,
-    app_state::{AppState, GameState},
+use bevy::{
+    input::mouse::{AccumulatedMouseMotion, AccumulatedMouseScroll},
+    prelude::*,
+    window::PrimaryWindow,
 };
+
+use crate::{CAMERA_POS, app_state::AppState};
 
 const BACKGROUND_COLOR: Color = Color::hsl(150., 1., 0.4);
 
@@ -16,9 +17,7 @@ impl Plugin for MapPlugin {
             .add_systems(OnExit(AppState::Game), exit)
             .add_systems(
                 Update,
-                pan_camera
-                    .run_if(in_state(AppState::Game))
-                    .run_if(not(in_state(GameState::GameOver))),
+                (pan_camera, camera_zoom).run_if(in_state(AppState::Game)),
             );
     }
 }
@@ -99,5 +98,17 @@ fn pan_camera(
         camera.translation.y = map_info.anchor.y + window_size.y;
     } else if camera.translation.y > map_info.anchor.y + map_info.size.y - window_size.y {
         camera.translation.y = map_info.anchor.y + map_info.size.y - window_size.y;
+    }
+}
+
+fn camera_zoom(
+    mut camera: Single<&mut Transform, With<Camera>>,
+    scroll: Res<AccumulatedMouseScroll>,
+) {
+    if scroll.delta.y != 0. {
+        let mut new_scale = camera.scale.x - 0.05 * scroll.delta.y;
+        new_scale = new_scale.clamp(0.5, 1.);
+        camera.scale.x = new_scale;
+        camera.scale.y = new_scale;
     }
 }
