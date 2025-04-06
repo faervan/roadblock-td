@@ -2,7 +2,7 @@ use bevy::{color::palettes::css::RED, prelude::*};
 
 use crate::{
     app_state::GameState,
-    enemy::Enemy,
+    enemy::{Enemy, EnemyGoal},
     game_loop::{Currency, GameStatistics},
     grid::TILE_SIZE,
     health::Health,
@@ -36,6 +36,7 @@ fn shoot(
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<ColorMaterial>>,
     mut tower: Query<(&mut Tower, &Transform)>,
+    goal: Single<&Transform, With<EnemyGoal>>,
     enemy: Query<(&Transform, Entity), With<Enemy>>,
     time: Res<Time>,
 ) {
@@ -49,18 +50,22 @@ fn shoot(
         let mut closest_enemy = None;
 
         for (enemy_transform, entity) in enemy.iter() {
-            let dist = tower_transform
+            let goal_dist = goal
                 .translation
                 .distance_squared(enemy_transform.translation);
 
-            if closest_dist.is_none_or(|x| x > dist) {
-                closest_dist = Some(dist);
+            let tower_dist = tower_transform
+                .translation
+                .distance(enemy_transform.translation);
+
+            if tower_dist > tower.range() {
+                continue;
+            }
+
+            if closest_dist.is_none_or(|x| x > goal_dist) {
+                closest_dist = Some(goal_dist);
                 closest_enemy = Some(entity);
             }
-        }
-
-        if closest_dist.is_none_or(|x| x.sqrt() > tower.range()) {
-            continue;
         }
 
         if let Some(closest) = closest_enemy {
