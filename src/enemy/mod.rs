@@ -41,7 +41,7 @@ impl Plugin for EnemyPlugin {
     }
 }
 
-#[derive(Reflect, Component, Deref, DerefMut)]
+#[derive(Reflect, Component, Deref, DerefMut, Debug)]
 #[reflect(Component)]
 pub struct Enemy {
     pub current: GridPos,

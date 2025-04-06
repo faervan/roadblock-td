@@ -32,7 +32,7 @@ impl Plugin for EnemyMovementPlugin {
     }
 }
 
-#[derive(Reflect, Component)]
+#[derive(Reflect, Component, Debug)]
 #[reflect(Component)]
 pub struct EnemyPath {
     pub steps: Vec<GridPos>,
@@ -321,7 +321,12 @@ pub fn move_enemies(
         };
         let direction = next - pos.translation;
         // The enemy should never move on the Z axis
-        assert_eq!(direction.z, 0.);
+        if direction.z != 0. {
+            panic!(
+                "It happened! Some enemy went mad!\n next: {next}\n pos.translation: {}\n direction: {direction}\n\n enemy: {enemy:#?}\n\n enemy_path: {path:#?}",
+                pos.translation
+            );
+        }
         pos.translation += direction.normalize() * time.delta_secs() * enemy.velocity();
         if pos.translation.distance(next) >= direction.length() {
             path.next = None;
