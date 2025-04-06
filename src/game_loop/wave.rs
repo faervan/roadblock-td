@@ -3,7 +3,7 @@ use std::time::Duration;
 use bevy::{prelude::*, utils::HashMap};
 
 use crate::{
-    app_state::AppState,
+    app_state::{AppState, GameState, WaveState},
     enemy::{Enemy, EnemyType},
 };
 
@@ -11,15 +11,15 @@ pub struct WavePlugin;
 
 impl Plugin for WavePlugin {
     fn build(&self, app: &mut App) {
-        app.add_sub_state::<WaveState>()
-            .add_event::<WaveStart>()
+        app.add_event::<WaveStart>()
             .add_systems(OnEnter(AppState::Game), insert_wave_info)
             .add_systems(
                 Update,
                 (
                     count_wave_margin.run_if(in_state(WaveState::Starting)),
                     check_wave_finished.run_if(in_state(WaveState::Ongoing)),
-                ),
+                )
+                    .run_if(in_state(GameState::Running)),
             );
     }
 }
@@ -38,7 +38,7 @@ pub struct WaveInfo {
     spawners: HashMap<Wave, Vec<SpawnerInfo>>,
     current: Wave,
     pub last: Wave,
-    margin: Timer,
+    pub margin: Timer,
     /// Count of spawners already spawned up to this wave
     current_spawners: usize,
     /// Count of the spawners which completed all of their spawns for this wave
@@ -58,15 +58,6 @@ impl Default for SpawnerInfo {
             enemies: |wave| vec![EnemyType::Skeleton; wave],
         }
     }
-}
-
-#[derive(SubStates, Hash, Debug, Clone, Copy, PartialEq, Eq, Default)]
-#[source(AppState = AppState::Game)]
-enum WaveState {
-    #[default]
-    Starting,
-    Ongoing,
-    AllFinished,
 }
 
 pub fn insert_wave_info(mut commands: Commands) {

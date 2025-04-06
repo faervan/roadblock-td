@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use bevy_lunex::{Dimension, UiLunexPlugins};
+use bevy_lunex::{Dimension, UiLunexPlugins, UiTextSize};
 use hud::HUDPlugin;
 use main_menu::MainMenuPlugin;
 use settings::SettingsMenuPlugin;
@@ -21,6 +21,7 @@ pub struct UIPlugin;
 impl Plugin for UIPlugin {
     fn build(&self, app: &mut App) {
         app.register_type::<Dimension>()
+            .register_type::<UiTextSize>()
             .add_plugins(UiLunexPlugins)
             .add_plugins((MainMenuPlugin, HUDPlugin, SettingsMenuPlugin))
             .add_systems(Update, button_interaction);

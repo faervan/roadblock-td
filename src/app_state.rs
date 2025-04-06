@@ -11,6 +11,7 @@ impl Plugin for AppStatePlugin {
             .add_sub_state::<MenuState>()
             .add_sub_state::<GameState>()
             .add_sub_state::<TowerPlacingState>()
+            .add_sub_state::<WaveState>()
             .add_systems(Startup, set_app_state)
             .add_systems(
                 Update,
@@ -59,6 +60,15 @@ pub enum TowerPlacingState {
     Placing,
     #[default]
     None,
+}
+
+#[derive(SubStates, Hash, Debug, Clone, Copy, PartialEq, Eq, Default)]
+#[source(AppState = AppState::Game)]
+pub enum WaveState {
+    #[default]
+    Starting,
+    Ongoing,
+    AllFinished,
 }
 
 fn escape_to_menu(mut next_state: ResMut<NextState<AppState>>) {
