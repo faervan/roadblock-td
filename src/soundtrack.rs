@@ -11,6 +11,7 @@ impl Plugin for SoundtrackPlugin {
         app.register_type::<SoundtrackHandles>()
             .register_type::<FadeIn>()
             .register_type::<FadeOut>()
+            .register_type::<AudioPlayer>()
             .add_event::<SoundtrackToggled>()
             .add_systems(Startup, setup)
             .add_systems(
@@ -42,6 +43,7 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
 
 fn spawn_track(commands: &mut Commands, track: Handle<AudioSource>) {
     commands.spawn((
+        Name::new("Soundtrack"),
         AudioPlayer(track),
         PlaybackSettings {
             mode: bevy::audio::PlaybackMode::Loop,
@@ -60,7 +62,7 @@ fn play_menu_soundtrack(
 ) {
     if settings.soundtrack_enabled {
         for track in &tracks {
-            commands.entity(track).insert(FadeOut);
+            commands.entity(track).insert(FadeOut).remove::<FadeIn>();
         }
         spawn_track(&mut commands, track_handles.menu.clone());
     }
@@ -74,7 +76,7 @@ fn play_game_soundtrack(
 ) {
     if settings.soundtrack_enabled {
         for track in &tracks {
-            commands.entity(track).insert(FadeOut);
+            commands.entity(track).insert(FadeOut).remove::<FadeIn>();
         }
         spawn_track(&mut commands, track_handles.game.clone());
     }
@@ -87,11 +89,7 @@ struct FadeIn;
 #[reflect(Component)]
 struct FadeOut;
 
-fn fade_in(
-    mut commands: Commands,
-    mut audio_sink: Query<(&mut AudioSink, Entity), With<FadeIn>>,
-    time: Res<Time>,
-) {
+fn fade_in(mut commands: Commands, mut audio_sink: Query<(&mut AudioSink, Entity), With<FadeIn>>, time: Res<Time>) {
     for (audio, entity) in audio_sink.iter_mut() {
         audio.set_volume(audio.volume() + time.delta_secs() / FADE_TIME);
         if audio.volume() >= 1.0 {
@@ -101,11 +99,7 @@ fn fade_in(
     }
 }
 
-fn fade_out(
-    mut commands: Commands,
-    mut audio_sink: Query<(&mut AudioSink, Entity), With<FadeOut>>,
-    time: Res<Time>,
-) {
+fn fade_out(mut commands: Commands, mut audio_sink: Query<(&mut AudioSink, Entity), With<FadeOut>>, time: Res<Time>) {
     for (audio, entity) in audio_sink.iter_mut() {
         audio.set_volume(audio.volume() - time.delta_secs() / FADE_TIME);
         if audio.volume() <= 0.0 {
@@ -134,7 +128,7 @@ fn handle_soundtrack_toggle(
         ),
         false => {
             for track in &tracks {
-                commands.entity(track).insert(FadeOut);
+                commands.entity(track).insert(FadeOut).remove::<FadeIn>();
             }
         }
     }

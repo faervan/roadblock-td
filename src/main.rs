@@ -38,7 +38,7 @@ fn main() {
                 ..default()
             })
             .set(AudioPlugin {
-                global_volume: GlobalVolume::new(0.05),
+                global_volume: GlobalVolume::new(0.1),
                 ..Default::default()
             }),
     );
@@ -48,6 +48,7 @@ fn main() {
     }
 
     app.register_type::<Settings>();
+    app.register_type::<AssetLock>();
 
     app.insert_resource(RngResource(Rng::new()));
 
@@ -74,6 +75,7 @@ fn main() {
         UIPlugin,
     ));
 
+    app.add_systems(PreStartup, preload_assets);
     app.add_systems(Startup, setup);
     app.add_systems(Update, exit_on_ctrl_q);
 
@@ -88,16 +90,20 @@ struct Settings {
 }
 
 impl Settings {
-    fn sfx_label(&self) -> &str {
+    const SFX_VARIANTS: &[&str] = &["Sfx enabled", "Sfx disabled"];
+    const SOUNDTRACK_VARIANTS: &[&str] = &["Soundtrack enabled", "Soundtrack disabled"];
+
+    fn sfx_label(&self) -> &'static str {
         match self.sfx_enabled {
-            true => "Sfx enabled",
-            false => "Sfx disabled",
+            true => Self::SFX_VARIANTS[0],
+            false => Self::SFX_VARIANTS[1],
         }
     }
-    fn soundtrack_label(&self) -> &str {
+
+    fn soundtrack_label(&self) -> &'static str {
         match self.soundtrack_enabled {
-            true => "Soundtrack enabled",
-            false => "Soundtrack disabled",
+            true => Self::SOUNDTRACK_VARIANTS[0],
+            false => Self::SOUNDTRACK_VARIANTS[1],
         }
     }
 }
@@ -137,4 +143,21 @@ fn exit_on_ctrl_q(mut app_exit: EventWriter<AppExit>, input: Res<ButtonInput<Key
     if input.pressed(KeyCode::ControlLeft) && input.just_pressed(KeyCode::KeyQ) {
         app_exit.send(AppExit::Success);
     }
+}
+
+#[allow(dead_code)]
+#[derive(Component, Reflect)]
+#[reflect(Component)]
+struct AssetLock(#[reflect(ignore)] Vec<UntypedHandle>);
+
+/// This system makes sure certain Assets never get dropped by bevy, keeping them in memory for the
+/// entire lifetime of the game
+fn preload_assets(mut commands: Commands, asset_server: Res<AssetServer>) {
+    commands.spawn((
+        Name::new("AssetLock"),
+        AssetLock(vec![
+            asset_server.load::<Image>("title_image.png").untyped(),
+            asset_server.load::<AudioSource>("sfx/Cloud Click.ogg").untyped(),
+        ]),
+    ));
 }
