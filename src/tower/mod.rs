@@ -112,24 +112,24 @@ impl TowerType {
 
     pub fn size(&self) -> (isize, isize) {
         match self {
-            TowerType::Wall => (4, 1),
-            TowerType::SpikedWall => (4, 1),
+            TowerType::Wall => (1, 1),
+            TowerType::SpikedWall => (1, 1),
             TowerType::Canon => (3, 3),
         }
     }
 
     fn offset(&self) -> (isize, isize) {
         match self {
-            TowerType::Wall => (1, 0),
-            TowerType::SpikedWall => (1, 0),
+            TowerType::Wall => (0, 0),
+            TowerType::SpikedWall => (0, 0),
             TowerType::Canon => (1, 1),
         }
     }
 
     fn cost(&self) -> i32 {
         match self {
-            TowerType::Wall => 10,
-            TowerType::SpikedWall => 20,
+            TowerType::Wall => 2,
+            TowerType::SpikedWall => 5,
             TowerType::Canon => 50,
         }
     }

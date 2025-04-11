@@ -1,6 +1,10 @@
 use std::ops::{Deref, DerefMut};
 
-use bevy::{input::common_conditions::input_just_pressed, prelude::*, window::PrimaryWindow};
+use bevy::{
+    input::common_conditions::{input_just_pressed, input_pressed},
+    prelude::*,
+    window::PrimaryWindow,
+};
 
 use crate::{
     Orientation,
@@ -26,7 +30,10 @@ impl Plugin for TowerPlacingPlugin {
                 Update,
                 (
                     place_tower
-                        .run_if(input_just_pressed(MouseButton::Left))
+                        .run_if(not(
+                            input_just_pressed(MouseButton::Left)
+                                .or(input_pressed(KeyCode::ShiftLeft).and(input_pressed(MouseButton::Left))),
+                        ))
                         .run_if(in_state(GameState::Running)),
                     change_rotation.run_if(input_just_pressed(KeyCode::KeyR)),
                     update_preview,
@@ -60,7 +67,6 @@ impl DerefMut for SelectedTower {
 #[derive(Reflect, Component)]
 #[reflect(Component)]
 struct TowerPreview;
-
 pub fn place_tower(
     mut commands: Commands,
     mut event_writer: EventWriter<PathChangedEvent>,
@@ -100,8 +106,7 @@ pub fn place_tower(
                             return;
                         }
 
-                        if pos.col > COLUMNS - 1 || pos.col < 0 || pos.row > ROWS - 1 || pos.row < 0
-                        {
+                        if pos.col > COLUMNS - 1 || pos.col < 0 || pos.row > ROWS - 1 || pos.row < 0 {
                             return;
                         }
                     }
@@ -109,10 +114,7 @@ pub fn place_tower(
 
                 let entity = commands
                     .spawn((
-                        Name::new(format!(
-                            "Tower: {:?} ({:?})",
-                            tower.variant, tower.orientation
-                        )),
+                        Name::new(format!("Tower: {:?} ({:?})", tower.variant, tower.orientation)),
                         Health::new(tower.max_hp(), tower.health_bar_offset()),
                         tower.0.clone(),
                         Sprite {
@@ -125,8 +127,7 @@ pub fn place_tower(
                             ..default()
                         },
                         Transform {
-                            translation: (grid_to_world_coords(grid_pos) - (TILE_SIZE * 0.5))
-                                .extend(1.0),
+                            translation: (grid_to_world_coords(grid_pos) - (TILE_SIZE * 0.5)).extend(1.0),
                             ..default()
                         },
                     ))
@@ -215,11 +216,7 @@ fn update_preview(
                                 sprite.color = Color::srgb(1.0, 0.0, 0.0);
                             }
 
-                            if pos.col > COLUMNS - 1
-                                || pos.col < 0
-                                || pos.row > ROWS - 1
-                                || pos.row < 0
-                            {
+                            if pos.col > COLUMNS - 1 || pos.col < 0 || pos.row > ROWS - 1 || pos.row < 0 {
                                 sprite.color = Color::srgb(1.0, 0.0, 0.0);
                             }
                         }
@@ -231,8 +228,7 @@ fn update_preview(
                     y: tower_size.1 as f32 * TILE_SIZE,
                 });
 
-                transform.translation =
-                    (grid_to_world_coords(grid_pos) - (TILE_SIZE * 0.5)).extend(2.0);
+                transform.translation = (grid_to_world_coords(grid_pos) - (TILE_SIZE * 0.5)).extend(2.0);
 
                 *visibility = Visibility::Inherited;
             } else {
