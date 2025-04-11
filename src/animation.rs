@@ -24,10 +24,7 @@ impl AnimationConfig {
         Self {
             first_sprite: first,
             last_sprite: last,
-            frame_timer: Timer::new(
-                Duration::from_secs_f32(1. / fps as f32),
-                TimerMode::Repeating,
-            ),
+            frame_timer: Timer::new(Duration::from_secs_f32(1. / fps as f32), TimerMode::Repeating),
         }
     }
 }

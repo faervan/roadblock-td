@@ -93,11 +93,7 @@ fn count_wave_margin(
         wave.margin.reset();
         wave.done_this_wave = 0;
 
-        let spawners = wave
-            .spawners
-            .get(&wave.current)
-            .cloned()
-            .unwrap_or_default();
+        let spawners = wave.spawners.get(&wave.current).cloned().unwrap_or_default();
         wave.current_spawners += spawners.len();
         events.send(WaveStart {
             current: wave.current,

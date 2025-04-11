@@ -48,10 +48,7 @@ impl SpawnQueue {
     fn new(info: &SpawnerInfo, wave: usize) -> Self {
         Self {
             enemies: (info.enemies)(wave),
-            timer: Timer::new(
-                Duration::from_secs_f32((info.interval)(wave)),
-                TimerMode::Repeating,
-            ),
+            timer: Timer::new(Duration::from_secs_f32((info.interval)(wave)), TimerMode::Repeating),
         }
     }
 }
@@ -149,9 +146,7 @@ fn spawn_enemy_spawners(
             let spawner = EnemySpawn::new(EnemySpawnType::RedTower, grid_pos, *info);
             let other = spawner.other_tiles();
 
-            if spawner.pos.distance_to_closest(&grid.enemy_goals) < 35
-                || other.iter().any(|pos| !grid.is_free(pos))
-            {
+            if spawner.pos.distance_to_closest(&grid.enemy_goals) < 35 || other.iter().any(|pos| !grid.is_free(pos)) {
                 continue;
             }
 
@@ -180,9 +175,7 @@ fn spawn_enemy_spawners(
     }
 
     for (entity, spawner) in &spawner_query {
-        commands
-            .entity(entity)
-            .insert(SpawnQueue::new(&spawner.info, **wave));
+        commands.entity(entity).insert(SpawnQueue::new(&spawner.info, **wave));
     }
 }
 

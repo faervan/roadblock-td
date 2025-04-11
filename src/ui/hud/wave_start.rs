@@ -1,7 +1,5 @@
 use bevy::{prelude::*, sprite::Anchor};
-use bevy_lunex::{
-    Ab, Align, Rh, Rl, UiFetchFromCamera, UiLayout, UiLayoutRoot, UiMeshPlane2d, UiTextSize,
-};
+use bevy_lunex::{Ab, Align, Rh, Rl, UiFetchFromCamera, UiLayout, UiLayoutRoot, UiMeshPlane2d, UiTextSize};
 
 use crate::{
     app_state::{GameState, WaveState},
@@ -16,14 +14,10 @@ impl Plugin for WaveStartPlugin {
         app.register_type::<WaveStartUIMarker>()
             .register_type::<WaveLoadingMarker>()
             .add_systems(OnEnter(WaveState::Starting), build_ui)
-            .add_systems(
-                OnExit(WaveState::Starting),
-                despawn_menu::<WaveStartUIMarker>,
-            )
+            .add_systems(OnExit(WaveState::Starting), despawn_menu::<WaveStartUIMarker>)
             .add_systems(
                 Update,
-                update_loading_bar
-                    .run_if(in_state(GameState::Running).and(in_state(WaveState::Starting))),
+                update_loading_bar.run_if(in_state(GameState::Running).and(in_state(WaveState::Starting))),
             );
     }
 }
@@ -71,10 +65,7 @@ fn build_ui(
                 ));
                 ui.spawn((
                     Name::new("Wave loading bar"),
-                    UiLayout::solid()
-                        .size((Rl(100.), Rl(16.)))
-                        .align_y(Align::END)
-                        .pack(),
+                    UiLayout::solid().size((Rl(100.), Rl(16.))).align_y(Align::END).pack(),
                     UiMeshPlane2d,
                     MeshMaterial2d(materials.add(UI_INFO_BACKGROUND)),
                 ))
@@ -93,10 +84,7 @@ fn build_ui(
         .set_parent(*camera);
 }
 
-fn update_loading_bar(
-    wave: Res<WaveInfo>,
-    mut loading_bar: Single<&mut Sprite, With<WaveLoadingMarker>>,
-) {
+fn update_loading_bar(wave: Res<WaveInfo>, mut loading_bar: Single<&mut Sprite, With<WaveLoadingMarker>>) {
     loading_bar.custom_size = Some(Vec2::new(
         wave.margin.elapsed_secs() / wave.margin.duration().as_secs_f32() * WIDTH,
         HEIGHT / 5.,

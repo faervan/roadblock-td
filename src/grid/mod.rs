@@ -50,8 +50,7 @@ impl Grid {
 pub fn spawn_grid(mut commands: Commands) {
     commands.insert_resource(Grid::default());
 
-    let position =
-        |total: f32, current| (-(total * 0.5 * TILE_SIZE) + current * TILE_SIZE) - TILE_SIZE * 0.5;
+    let position = |total: f32, current| (-(total * 0.5 * TILE_SIZE) + current * TILE_SIZE) - TILE_SIZE * 0.5;
 
     let total_size_x = ROWS as f32 * TILE_SIZE;
     let total_size_y = COLUMNS as f32 * TILE_SIZE;

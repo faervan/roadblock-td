@@ -1,7 +1,5 @@
 use bevy::prelude::*;
-use bevy_lunex::{
-    Ab, Align, Rh, Rl, UiFetchFromCamera, UiLayout, UiLayoutRoot, UiMeshPlane2d, UiTextSize,
-};
+use bevy_lunex::{Ab, Align, Rh, Rl, UiFetchFromCamera, UiLayout, UiLayoutRoot, UiMeshPlane2d, UiTextSize};
 
 use crate::{
     app_state::{AppState, GameState},
@@ -51,18 +49,12 @@ fn build_ui(
             // Spawn boundary node
             ui.spawn((
                 Name::new("Top bar boundary"),
-                UiLayout::boundary()
-                    .pos1(Ab(0.))
-                    .pos2((Rl(100.), Ab(50.)))
-                    .pack(),
+                UiLayout::boundary().pos1(Ab(0.)).pos2((Rl(100.), Ab(50.))).pack(),
             ))
             .with_children(|ui| {
                 ui.spawn((
                     Name::new("Wave info"),
-                    UiLayout::solid()
-                        .size((Ab(250.), Rl(100.)))
-                        .align_x(Align::LEFT)
-                        .pack(),
+                    UiLayout::solid().size((Ab(250.), Rl(100.))).align_x(Align::LEFT).pack(),
                     UiMeshPlane2d,
                     MeshMaterial2d(materials.add(UI_INFO_BACKGROUND)),
                 ))
@@ -102,10 +94,7 @@ fn update_wave(
     }
 }
 
-fn update_currency(
-    mut currency_info: Single<&mut Text2d, With<CurrencyInfoMarker>>,
-    currency: Res<Currency>,
-) {
+fn update_currency(mut currency_info: Single<&mut Text2d, With<CurrencyInfoMarker>>, currency: Res<Currency>) {
     if currency.is_changed() {
         currency_info.0 = format!("Money: {}", **currency);
     }

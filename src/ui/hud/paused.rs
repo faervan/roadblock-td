@@ -21,10 +21,7 @@ impl Plugin for PausedPlugin {
     }
 }
 
-fn toggle_paused_state(
-    current_state: Res<State<GameState>>,
-    mut next_state: ResMut<NextState<GameState>>,
-) {
+fn toggle_paused_state(current_state: Res<State<GameState>>, mut next_state: ResMut<NextState<GameState>>) {
     next_state.set(match current_state.get() {
         GameState::Paused => GameState::Running,
         GameState::Running => GameState::Paused,

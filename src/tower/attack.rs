@@ -50,13 +50,9 @@ fn shoot(
         let mut closest_enemy = None;
 
         for (enemy_transform, entity) in enemy.iter() {
-            let goal_dist = goal
-                .translation
-                .distance_squared(enemy_transform.translation);
+            let goal_dist = goal.translation.distance_squared(enemy_transform.translation);
 
-            let tower_dist = tower_transform
-                .translation
-                .distance(enemy_transform.translation);
+            let tower_dist = tower_transform.translation.distance(enemy_transform.translation);
 
             if tower_dist > tower.range() {
                 continue;
@@ -82,12 +78,8 @@ fn shoot(
                 Transform {
                     translation: Vec3 {
                         //will need to handle the rotation here at some point but I am lazy and the only attacking tower we have rn is symmetrical
-                        x: tower_transform.translation.x
-                            + tower.offset().0 as f32 * TILE_SIZE
-                            + TILE_SIZE * 0.5,
-                        y: tower_transform.translation.y
-                            + tower.offset().1 as f32 * TILE_SIZE
-                            + TILE_SIZE * 0.5,
+                        x: tower_transform.translation.x + tower.offset().0 as f32 * TILE_SIZE + TILE_SIZE * 0.5,
+                        y: tower_transform.translation.y + tower.offset().1 as f32 * TILE_SIZE + TILE_SIZE * 0.5,
                         z: 3.0,
                     },
                     ..default()
@@ -124,11 +116,7 @@ pub fn projectile_damage(
 ) {
     for (projectile_transform, projectile, projectile_entity) in projectile.iter() {
         for (enemy_transform, mut health, enemy_entity, enemy) in enemy.iter_mut() {
-            if projectile_transform
-                .translation
-                .distance(enemy_transform.translation)
-                < TILE_SIZE * 0.5
-            {
+            if projectile_transform.translation.distance(enemy_transform.translation) < TILE_SIZE * 0.5 {
                 **health -= projectile.damage;
                 if **health <= 0 {
                     commands.entity(enemy_entity).despawn_recursive();

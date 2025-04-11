@@ -16,12 +16,7 @@ impl Plugin for EnemyAttackPlugin {
     fn build(&self, app: &mut App) {
         app.register_type::<Attacking>().add_systems(
             Update,
-            (
-                advance_enemy_attack_timers,
-                enemy_attacking,
-                enemy_attacking_goal,
-            )
-                .run_if(in_state(GameState::Running)),
+            (advance_enemy_attack_timers, enemy_attacking, enemy_attacking_goal).run_if(in_state(GameState::Running)),
         );
         app.world_mut()
             .register_component_hooks::<Attacking>()

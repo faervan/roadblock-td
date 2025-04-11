@@ -81,10 +81,7 @@ fn add_health_bar(
                 ))
                 .set_parent(child)
                 .id();
-            commands.entity(entity).insert(HasHealthBar {
-                child,
-                childs_child,
-            });
+            commands.entity(entity).insert(HasHealthBar { child, childs_child });
         }
     }
 }

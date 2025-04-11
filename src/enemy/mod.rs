@@ -59,10 +59,7 @@ pub enum EnemyType {
 impl Enemy {
     fn new(current: GridPos, variant: EnemyType) -> Self {
         Self {
-            attack_timer: Timer::new(
-                Duration::from_secs_f32(variant.attack_cooldown()),
-                TimerMode::Once,
-            ),
+            attack_timer: Timer::new(Duration::from_secs_f32(variant.attack_cooldown()), TimerMode::Once),
             current,
             variant,
             orientation: Orientation::default(),
@@ -72,13 +69,7 @@ impl Enemy {
     fn walk_layout(&self, layouts: &mut Assets<TextureAtlasLayout>) -> TextureAtlas {
         match self.variant {
             EnemyType::Skeleton => TextureAtlas {
-                layout: layouts.add(TextureAtlasLayout::from_grid(
-                    UVec2::splat(64),
-                    9,
-                    4,
-                    None,
-                    None,
-                )),
+                layout: layouts.add(TextureAtlasLayout::from_grid(UVec2::splat(64), 9, 4, None, None)),
                 index: self.walk_sprite_indices().0,
             },
         }
@@ -87,13 +78,7 @@ impl Enemy {
     fn attack_layout(&self, layouts: &mut Assets<TextureAtlasLayout>) -> TextureAtlas {
         match self.variant {
             EnemyType::Skeleton => TextureAtlas {
-                layout: layouts.add(TextureAtlasLayout::from_grid(
-                    UVec2::splat(64),
-                    6,
-                    4,
-                    None,
-                    None,
-                )),
+                layout: layouts.add(TextureAtlasLayout::from_grid(UVec2::splat(64), 6, 4, None, None)),
                 index: self.attack_sprite_indices().0,
             },
         }

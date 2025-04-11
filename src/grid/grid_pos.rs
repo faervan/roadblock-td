@@ -136,9 +136,7 @@ impl GridPos {
             let tile = GridPos::new(row, col);
             if tile.inside_grid_bounds() {
                 match towers.get(&tile) {
-                    Some((entity, travel_cost)) => {
-                        neighbors.push((tile, Some(entity), *travel_cost))
-                    }
+                    Some((entity, travel_cost)) => neighbors.push((tile, Some(entity), *travel_cost)),
                     None => neighbors.push((tile, None, default_travel_cost)),
                 }
             }
