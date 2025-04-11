@@ -30,10 +30,10 @@ impl Plugin for TowerPlacingPlugin {
                 Update,
                 (
                     place_tower
-                        .run_if(not(
+                        .run_if(
                             input_just_pressed(MouseButton::Left)
                                 .or(input_pressed(KeyCode::ShiftLeft).and(input_pressed(MouseButton::Left))),
-                        ))
+                        )
                         .run_if(in_state(GameState::Running)),
                     change_rotation.run_if(input_just_pressed(KeyCode::KeyR)),
                     update_preview,
