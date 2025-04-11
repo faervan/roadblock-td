@@ -57,7 +57,10 @@ struct HealthBar;
 
 fn add_health_bar(
     mut commands: Commands,
-    query: Query<(Entity, &Health), (Changed<Health>, Without<HasHealthBar>, Without<NoHealthBar>)>,
+    query: Query<
+        (Entity, &Health),
+        (Changed<Health>, Without<HasHealthBar>, Without<NoHealthBar>),
+    >,
 ) {
     for (entity, health) in &query {
         if health.current != health.max {
@@ -81,7 +84,10 @@ fn add_health_bar(
                 ))
                 .set_parent(child)
                 .id();
-            commands.entity(entity).insert(HasHealthBar { child, childs_child });
+            commands.entity(entity).insert(HasHealthBar {
+                child,
+                childs_child,
+            });
         }
     }
 }

@@ -14,7 +14,10 @@ impl Plugin for GameLoopPlugin {
         app.register_type::<GameStatistics>()
             .add_plugins(WavePlugin)
             .add_systems(OnEnter(AppState::Game), insert_game_resources)
-            .add_systems(Update, advance_stat_time.run_if(in_state(GameState::Running)));
+            .add_systems(
+                Update,
+                advance_stat_time.run_if(in_state(GameState::Running)),
+            );
     }
 }
 

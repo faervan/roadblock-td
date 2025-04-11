@@ -32,7 +32,9 @@ fn main() {
                 primary_window: Some(Window {
                     #[cfg(debug_assertions)]
                     present_mode: bevy::window::PresentMode::AutoNoVsync,
-                    mode: bevy::window::WindowMode::BorderlessFullscreen(MonitorSelection::Primary),
+                    mode: bevy::window::WindowMode::BorderlessFullscreen(
+                        MonitorSelection::Primary,
+                    ),
                     ..default()
                 }),
                 ..default()
@@ -52,10 +54,11 @@ fn main() {
 
     app.insert_resource(RngResource(Rng::new()));
 
-    let [sfx_enabled, soundtrack_enabled] = match std::env::args().any(|a| a == "--silent") {
-        true => [false, false],
-        false => [true, true],
-    };
+    let [sfx_enabled, soundtrack_enabled] =
+        match std::env::args().any(|a| a == "--silent") {
+            true => [false, false],
+            false => [true, true],
+        };
 
     app.insert_resource(Settings {
         sfx_enabled,
@@ -157,7 +160,9 @@ fn preload_assets(mut commands: Commands, asset_server: Res<AssetServer>) {
         Name::new("AssetLock"),
         AssetLock(vec![
             asset_server.load::<Image>("title_image.png").untyped(),
-            asset_server.load::<AudioSource>("sfx/Cloud Click.ogg").untyped(),
+            asset_server
+                .load::<AudioSource>("sfx/Cloud Click.ogg")
+                .untyped(),
         ]),
     ));
 }

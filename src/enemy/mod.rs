@@ -1,7 +1,9 @@
 use std::time::Duration;
 
 use attack::EnemyAttackPlugin;
-use bevy::{input::common_conditions::input_just_pressed, prelude::*, window::PrimaryWindow};
+use bevy::{
+    input::common_conditions::input_just_pressed, prelude::*, window::PrimaryWindow,
+};
 pub use goal::EnemyGoal;
 use goal::EnemyGoalPlugin;
 use movement::EnemyMovementPlugin;
@@ -59,7 +61,10 @@ pub enum EnemyType {
 impl Enemy {
     fn new(current: GridPos, variant: EnemyType) -> Self {
         Self {
-            attack_timer: Timer::new(Duration::from_secs_f32(variant.attack_cooldown()), TimerMode::Once),
+            attack_timer: Timer::new(
+                Duration::from_secs_f32(variant.attack_cooldown()),
+                TimerMode::Once,
+            ),
             current,
             variant,
             orientation: Orientation::default(),
@@ -69,7 +74,13 @@ impl Enemy {
     fn walk_layout(&self, layouts: &mut Assets<TextureAtlasLayout>) -> TextureAtlas {
         match self.variant {
             EnemyType::Skeleton => TextureAtlas {
-                layout: layouts.add(TextureAtlasLayout::from_grid(UVec2::splat(64), 9, 4, None, None)),
+                layout: layouts.add(TextureAtlasLayout::from_grid(
+                    UVec2::splat(64),
+                    9,
+                    4,
+                    None,
+                    None,
+                )),
                 index: self.walk_sprite_indices().0,
             },
         }
@@ -78,7 +89,13 @@ impl Enemy {
     fn attack_layout(&self, layouts: &mut Assets<TextureAtlasLayout>) -> TextureAtlas {
         match self.variant {
             EnemyType::Skeleton => TextureAtlas {
-                layout: layouts.add(TextureAtlasLayout::from_grid(UVec2::splat(64), 6, 4, None, None)),
+                layout: layouts.add(TextureAtlasLayout::from_grid(
+                    UVec2::splat(64),
+                    6,
+                    4,
+                    None,
+                    None,
+                )),
                 index: self.attack_sprite_indices().0,
             },
         }
@@ -220,15 +237,21 @@ fn spawn_enemies_manual(
                 if grid.is_free(&grid_pos) {
                     let enemy = Enemy::new(grid_pos, EnemyType::Skeleton);
                     commands.spawn((
-                        Name::new(format!("Enemy: {:?} (manually spawned)", enemy.variant)),
+                        Name::new(format!(
+                            "Enemy: {:?} (manually spawned)",
+                            enemy.variant
+                        )),
                         Health::new(enemy.max_hp(), enemy.health_bar_offset()),
                         Sprite {
                             image: asset_server.load(enemy.walk_sprites()),
-                            texture_atlas: Some(enemy.walk_layout(&mut texture_atlas_layouts)),
+                            texture_atlas: Some(
+                                enemy.walk_layout(&mut texture_atlas_layouts),
+                            ),
                             ..Default::default()
                         },
                         Transform {
-                            translation: grid_to_world_coords(grid_pos).extend(2.) + enemy.offset(),
+                            translation: grid_to_world_coords(grid_pos).extend(2.)
+                                + enemy.offset(),
                             scale: enemy.scale(),
                             ..default()
                         },

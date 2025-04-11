@@ -11,7 +11,10 @@ impl Plugin for BottomBarPlugin {
         app.register_type::<player_health::PlayerHpCircle>()
             .register_type::<player_health::PlayerHpTextMarker>()
             .add_systems(OnEnter(AppState::Game), build_ui)
-            .add_systems(Update, update_player_health.run_if(in_state(AppState::Game)));
+            .add_systems(
+                Update,
+                update_player_health.run_if(in_state(AppState::Game)),
+            );
     }
 }
 
@@ -47,7 +50,9 @@ fn build_ui(
                 ))
                 .with_children(|p| tower_selection::build(p, &mut materials));
                 ui.spawn((Name::new("Player health bar"), UiLayout::solid().pack()))
-                    .with_children(|p| player_health::build(p, &mut materials, &mut meshes));
+                    .with_children(|p| {
+                        player_health::build(p, &mut materials, &mut meshes)
+                    });
             });
         })
         .set_parent(*camera);
@@ -56,7 +61,8 @@ fn build_ui(
 mod tower_selection {
     use bevy::{prelude::*, window::SystemCursorIcon};
     use bevy_lunex::{
-        Ab, OnHoverSetCursor, Rl, UiBase, UiColor, UiHover, UiLayout, UiMeshPlane2d, UiStateTrait, hover_set,
+        Ab, OnHoverSetCursor, Rl, UiBase, UiColor, UiHover, UiLayout, UiMeshPlane2d,
+        UiStateTrait, hover_set,
     };
 
     use crate::{
@@ -66,7 +72,8 @@ mod tower_selection {
     };
 
     // I would have automated this but I don't think it is possible :/
-    const TYPES: [TowerType; 3] = [TowerType::Wall, TowerType::SpikedWall, TowerType::Canon];
+    const TYPES: [TowerType; 3] =
+        [TowerType::Wall, TowerType::SpikedWall, TowerType::Canon];
     const TILE_SIZE_PX: f32 = 30.0;
 
     const BUTTON_COLOR: Color = Color::srgb(0.3, 0.3, 0.3);
@@ -91,7 +98,10 @@ mod tower_selection {
                                 .size(Ab(170.)),
                         ),
                     ]),
-                    UiColor::new(vec![(UiBase::id(), BUTTON_COLOR), (UiHover::id(), BUTTON_COLOR_HOVER)]),
+                    UiColor::new(vec![
+                        (UiBase::id(), BUTTON_COLOR),
+                        (UiHover::id(), BUTTON_COLOR_HOVER),
+                    ]),
                     UiHover::new().forward_speed(20.).backward_speed(5.),
                     Sprite::default(),
                     OnHoverSetCursor::new(SystemCursorIcon::Pointer),
@@ -107,12 +117,17 @@ mod tower_selection {
                             // This panics when replacing Ab(150.) with Rl(100.), even though the
                             // parent indeed has a size of 150x150
                             // (error msg: Rect size has to be positive)
-                            .pos2((Rl(100.) - Ab(icon_margin_x), Rl(100.) - Ab(icon_margin_y)))
+                            .pos2((
+                                Rl(100.) - Ab(icon_margin_x),
+                                Rl(100.) - Ab(icon_margin_y),
+                            ))
                             .pack(),
                         PickingBehavior::IGNORE,
                     ))
                     .with_child((
-                        UiLayout::solid().size((Ab(icon_width), Ab(icon_height))).pack(),
+                        UiLayout::solid()
+                            .size((Ab(icon_width), Ab(icon_height)))
+                            .pack(),
                         UiMeshPlane2d,
                         MeshMaterial2d(materials.add(Color::srgb(0., 0.5, 1.))),
                         PickingBehavior::IGNORE,
@@ -128,7 +143,9 @@ mod tower_selection {
                      mut commands: Commands,
                      settings: Res<Settings>| {
                         if settings.sfx_enabled {
-                            commands.spawn(AudioPlayer::new(asset_server.load("sfx/Cloud Click.ogg")));
+                            commands.spawn(AudioPlayer::new(
+                                asset_server.load("sfx/Cloud Click.ogg"),
+                            ));
                         }
                         selection.0 = Tower::new(*tower, selection.orientation);
                         next_state.set(TowerPlacingState::Placing);
@@ -154,7 +171,11 @@ mod player_health {
     #[reflect(Component)]
     pub struct PlayerHpTextMarker;
 
-    pub fn build(builder: &mut ChildBuilder, materials: &mut Assets<ColorMaterial>, meshes: &mut Assets<Mesh>) {
+    pub fn build(
+        builder: &mut ChildBuilder,
+        materials: &mut Assets<ColorMaterial>,
+        meshes: &mut Assets<Mesh>,
+    ) {
         builder
             .spawn((
                 Name::new("Player health"),

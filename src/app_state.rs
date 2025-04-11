@@ -1,4 +1,7 @@
-use bevy::{input::common_conditions::input_just_pressed, picking::pointer::PointerId, prelude::*, window::Monitor};
+use bevy::{
+    input::common_conditions::input_just_pressed, picking::pointer::PointerId,
+    prelude::*, window::Monitor,
+};
 
 pub struct AppStatePlugin;
 

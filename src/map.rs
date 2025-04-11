@@ -15,7 +15,10 @@ impl Plugin for MapPlugin {
         app.register_type::<MapInfo>()
             .add_systems(OnEnter(AppState::Game), init)
             .add_systems(OnExit(AppState::Game), exit)
-            .add_systems(Update, (pan_camera, camera_zoom).run_if(in_state(AppState::Game)));
+            .add_systems(
+                Update,
+                (pan_camera, camera_zoom).run_if(in_state(AppState::Game)),
+            );
     }
 }
 
@@ -98,7 +101,10 @@ fn pan_camera(
     }
 }
 
-fn camera_zoom(mut camera: Single<&mut Transform, With<Camera>>, scroll: Res<AccumulatedMouseScroll>) {
+fn camera_zoom(
+    mut camera: Single<&mut Transform, With<Camera>>,
+    scroll: Res<AccumulatedMouseScroll>,
+) {
     if scroll.delta.y != 0. {
         let mut new_scale = camera.scale.x - 0.05 * scroll.delta.y;
         new_scale = new_scale.clamp(0.5, 1.);

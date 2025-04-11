@@ -4,6 +4,7 @@ use hud::HUDPlugin;
 use main_menu::MainMenuPlugin;
 use settings::SettingsMenuPlugin;
 
+pub mod helpers;
 mod hud;
 mod main_menu;
 mod settings;

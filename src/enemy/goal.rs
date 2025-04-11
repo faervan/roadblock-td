@@ -90,7 +90,11 @@ impl EnemyGoal {
     }
 }
 
-fn spawn_enemy_goal(mut commands: Commands, mut grid: ResMut<Grid>, asset_server: Res<AssetServer>) {
+fn spawn_enemy_goal(
+    mut commands: Commands,
+    mut grid: ResMut<Grid>,
+    asset_server: Res<AssetServer>,
+) {
     let grid_pos = GridPos::new(ROWS / 2, COLUMNS - 2);
     let goal = EnemyGoal::Heart;
     let entity = commands

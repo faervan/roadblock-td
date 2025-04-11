@@ -49,7 +49,12 @@ impl Tower {
         }
     }
 
-    fn fill_grid(&self, origin: &GridPos, grid: &mut Grid, entity: Entity) -> Vec<GridPos> {
+    fn fill_grid(
+        &self,
+        origin: &GridPos,
+        grid: &mut Grid,
+        entity: Entity,
+    ) -> Vec<GridPos> {
         let mut blocked = vec![];
         grid.tower_origins.insert(entity, *origin);
         // Add entity to every coordinate it covers
@@ -91,10 +96,12 @@ impl Tower {
 
     fn health_bar_offset(&self) -> Vec2 {
         match self.variant {
-            TowerType::Wall | TowerType::SpikedWall => match self.orientation.is_horizontal() {
-                true => Vec2::new(13., 50.),
-                false => Vec2::new(50., 13.),
-            },
+            TowerType::Wall | TowerType::SpikedWall => {
+                match self.orientation.is_horizontal() {
+                    true => Vec2::new(13., 50.),
+                    false => Vec2::new(50., 13.),
+                }
+            }
             TowerType::Canon => Vec2::splat(38.),
         }
     }

@@ -82,8 +82,10 @@ fn try_get_target(
         HashMap::from([(enemy.current, (distance, 0, enemy.current, None))]);
     let mut closed: HashMap<GridPos, GridPos> = HashMap::new();
 
-    while let Some((tile, (_, g_cost, parent, tower_entity))) =
-        open.iter().min_by_key(|x| x.1.0).map(|(tile, data)| (*tile, *data))
+    while let Some((tile, (_, g_cost, parent, tower_entity))) = open
+        .iter()
+        .min_by_key(|x| x.1.0)
+        .map(|(tile, data)| (*tile, *data))
     {
         open.remove(&tile);
         closed.insert(tile, parent);
@@ -92,7 +94,9 @@ fn try_get_target(
             return Some((closed, tile));
         }
 
-        for (neighbor, nb_tower_entity, travel_cost) in tile.neighbors(tiles, default_travel_cost) {
+        for (neighbor, nb_tower_entity, travel_cost) in
+            tile.neighbors(tiles, default_travel_cost)
+        {
             if closed.contains_key(&neighbor) {
                 continue;
             }
@@ -123,7 +127,14 @@ fn try_get_target(
 
 fn enemy_get_path(
     mut commands: Commands,
-    enemies: Query<(&Enemy, Entity), (Without<EnemyPath>, Without<Attacking>, Without<AttackingGoal>)>,
+    enemies: Query<
+        (&Enemy, Entity),
+        (
+            Without<EnemyPath>,
+            Without<Attacking>,
+            Without<AttackingGoal>,
+        ),
+    >,
     towers: Query<&Health, With<Tower>>,
     grid: Res<Grid>,
 ) {
@@ -141,7 +152,12 @@ fn enemy_get_path(
             &grid
                 .towers
                 .iter()
-                .filter_map(|(pos, id)| towers.get(*id).map(|hp| (*pos, (*id, enemy.travel_cost(**hp)))).ok())
+                .filter_map(|(pos, id)| {
+                    towers
+                        .get(*id)
+                        .map(|hp| (*pos, (*id, enemy.travel_cost(**hp))))
+                        .ok()
+                })
                 .collect(),
             enemy,
             &grid.enemy_goals,
@@ -174,12 +190,19 @@ fn check_for_broken_paths(
     // If a new path is available, every Enemy should check if it's more optimal for them
     if !freed_tiles.is_empty() {
         for (_, entity) in &enemies {
-            commands.entity(entity).remove::<EnemyPath>().remove::<Attacking>();
+            commands
+                .entity(entity)
+                .remove::<EnemyPath>()
+                .remove::<Attacking>();
         }
         return;
     }
     'outer: for (path, entity) in &enemies {
-        if path.steps.last().is_some_and(|tile| blocked_tiles.contains(&tile)) {
+        if path
+            .steps
+            .last()
+            .is_some_and(|tile| blocked_tiles.contains(&tile))
+        {
             continue;
         }
         for tile in &blocked_tiles {
@@ -211,14 +234,15 @@ pub fn move_enemies(
             Some(target_pos) => target_pos,
             None => {
                 let tile = path.steps.pop().unwrap();
-                let orientation = match (tile.row > enemy.current.row, tile.col > enemy.current.col) {
-                    (true, false) => Orientation::Up,
-                    (false, true) => Orientation::Right,
-                    _ => match tile.row < enemy.current.row {
-                        true => Orientation::Down,
-                        false => Orientation::Left,
-                    },
-                };
+                let orientation =
+                    match (tile.row > enemy.current.row, tile.col > enemy.current.col) {
+                        (true, false) => Orientation::Up,
+                        (false, true) => Orientation::Right,
+                        _ => match tile.row < enemy.current.row {
+                            true => Orientation::Down,
+                            false => Orientation::Left,
+                        },
+                    };
 
                 if let Some(tower_entity) = grid.towers.get(&tile) {
                     if orientation != enemy.orientation {
@@ -229,7 +253,9 @@ pub fn move_enemies(
                             enemy.attack_animation_config(),
                             Sprite {
                                 image: asset_server.load(enemy.weapon_sprites()),
-                                texture_atlas: Some(enemy.attack_layout(&mut texture_atlas_layouts)),
+                                texture_atlas: Some(
+                                    enemy.attack_layout(&mut texture_atlas_layouts),
+                                ),
                                 ..Default::default()
                             },
                         ))
@@ -241,7 +267,9 @@ pub fn move_enemies(
                         enemy.attack_animation_config(),
                         Sprite {
                             image: asset_server.load(enemy.attack_sprites()),
-                            texture_atlas: Some(enemy.attack_layout(&mut texture_atlas_layouts)),
+                            texture_atlas: Some(
+                                enemy.attack_layout(&mut texture_atlas_layouts),
+                            ),
                             ..Default::default()
                         },
                     ));
@@ -258,7 +286,9 @@ pub fn move_enemies(
                             enemy.attack_animation_config(),
                             Sprite {
                                 image: asset_server.load(enemy.attack_sprites()),
-                                texture_atlas: Some(enemy.attack_layout(&mut texture_atlas_layouts)),
+                                texture_atlas: Some(
+                                    enemy.attack_layout(&mut texture_atlas_layouts),
+                                ),
                                 ..Default::default()
                             },
                         ))
@@ -266,7 +296,9 @@ pub fn move_enemies(
                             enemy.attack_animation_config(),
                             Sprite {
                                 image: asset_server.load(enemy.weapon_sprites()),
-                                texture_atlas: Some(enemy.attack_layout(&mut texture_atlas_layouts)),
+                                texture_atlas: Some(
+                                    enemy.attack_layout(&mut texture_atlas_layouts),
+                                ),
                                 ..Default::default()
                             },
                         ));
@@ -289,7 +321,8 @@ pub fn move_enemies(
         };
         let direction = next - pos.translation;
         if direction.element_sum() != 0. {
-            pos.translation += direction.normalize() * time.delta_secs() * enemy.velocity();
+            pos.translation +=
+                direction.normalize() * time.delta_secs() * enemy.velocity();
         }
         if pos.translation.distance(next) >= direction.length() {
             path.next = None;

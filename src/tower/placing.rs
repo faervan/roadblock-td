@@ -11,7 +11,10 @@ use crate::{
     app_state::{GameState, TowerPlacingState},
     enemy::PathChangedEvent,
     game_loop::{Currency, GameStatistics},
-    grid::{COLUMNS, Grid, GridPos, ROWS, TILE_SIZE, grid_to_world_coords, world_to_grid_coords},
+    grid::{
+        COLUMNS, Grid, GridPos, ROWS, TILE_SIZE, grid_to_world_coords,
+        world_to_grid_coords,
+    },
     health::Health,
 };
 
@@ -32,7 +35,8 @@ impl Plugin for TowerPlacingPlugin {
                     place_tower
                         .run_if(
                             input_just_pressed(MouseButton::Left)
-                                .or(input_pressed(KeyCode::ShiftLeft).and(input_pressed(MouseButton::Left))),
+                                .or(input_pressed(KeyCode::ShiftLeft)
+                                    .and(input_pressed(MouseButton::Left))),
                         )
                         .run_if(in_state(GameState::Running)),
                     change_rotation.run_if(input_just_pressed(KeyCode::KeyR)),
@@ -91,7 +95,8 @@ pub fn place_tower(
         let world_pos = camera.viewport_to_world_2d(cam_transform, mouse_pos);
         if let Ok(world_pos) = world_pos {
             if let Some(grid_pos) = world_to_grid_coords(world_pos) {
-                let grid_pos = apply_offset(grid_pos, tower.0.variant, tower.0.orientation);
+                let grid_pos =
+                    apply_offset(grid_pos, tower.0.variant, tower.0.orientation);
 
                 let tower_size = tower.size();
 
@@ -106,7 +111,11 @@ pub fn place_tower(
                             return;
                         }
 
-                        if pos.col > COLUMNS - 1 || pos.col < 0 || pos.row > ROWS - 1 || pos.row < 0 {
+                        if pos.col > COLUMNS - 1
+                            || pos.col < 0
+                            || pos.row > ROWS - 1
+                            || pos.row < 0
+                        {
                             return;
                         }
                     }
@@ -114,7 +123,10 @@ pub fn place_tower(
 
                 let entity = commands
                     .spawn((
-                        Name::new(format!("Tower: {:?} ({:?})", tower.variant, tower.orientation)),
+                        Name::new(format!(
+                            "Tower: {:?} ({:?})",
+                            tower.variant, tower.orientation
+                        )),
                         Health::new(tower.max_hp(), tower.health_bar_offset()),
                         tower.0.clone(),
                         Sprite {
@@ -127,7 +139,9 @@ pub fn place_tower(
                             ..default()
                         },
                         Transform {
-                            translation: (grid_to_world_coords(grid_pos) - (TILE_SIZE * 0.5)).extend(1.0),
+                            translation: (grid_to_world_coords(grid_pos)
+                                - (TILE_SIZE * 0.5))
+                                .extend(1.0),
                             ..default()
                         },
                     ))
@@ -184,7 +198,10 @@ fn update_preview(
     grid: Res<Grid>,
     tower: Res<SelectedTower>,
     currency: Res<Currency>,
-    mut preview: Query<(&mut Sprite, &mut Transform, &mut Visibility), With<TowerPreview>>,
+    mut preview: Query<
+        (&mut Sprite, &mut Transform, &mut Visibility),
+        With<TowerPreview>,
+    >,
 ) {
     let (mut sprite, mut transform, mut visibility) = preview.single_mut();
 
@@ -216,7 +233,11 @@ fn update_preview(
                                 sprite.color = Color::srgb(1.0, 0.0, 0.0);
                             }
 
-                            if pos.col > COLUMNS - 1 || pos.col < 0 || pos.row > ROWS - 1 || pos.row < 0 {
+                            if pos.col > COLUMNS - 1
+                                || pos.col < 0
+                                || pos.row > ROWS - 1
+                                || pos.row < 0
+                            {
                                 sprite.color = Color::srgb(1.0, 0.0, 0.0);
                             }
                         }
@@ -228,7 +249,8 @@ fn update_preview(
                     y: tower_size.1 as f32 * TILE_SIZE,
                 });
 
-                transform.translation = (grid_to_world_coords(grid_pos) - (TILE_SIZE * 0.5)).extend(2.0);
+                transform.translation =
+                    (grid_to_world_coords(grid_pos) - (TILE_SIZE * 0.5)).extend(2.0);
 
                 *visibility = Visibility::Inherited;
             } else {
@@ -240,7 +262,11 @@ fn update_preview(
     }
 }
 
-fn apply_offset(grid_pos: GridPos, tower: TowerType, orientation: Orientation) -> GridPos {
+fn apply_offset(
+    grid_pos: GridPos,
+    tower: TowerType,
+    orientation: Orientation,
+) -> GridPos {
     match orientation {
         Orientation::Up => GridPos {
             col: grid_pos.col - tower.offset().0,

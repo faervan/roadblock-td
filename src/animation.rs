@@ -24,12 +24,18 @@ impl AnimationConfig {
         Self {
             first_sprite: first,
             last_sprite: last,
-            frame_timer: Timer::new(Duration::from_secs_f32(1. / fps as f32), TimerMode::Repeating),
+            frame_timer: Timer::new(
+                Duration::from_secs_f32(1. / fps as f32),
+                TimerMode::Repeating,
+            ),
         }
     }
 }
 
-fn run_animations(time: Res<Time>, mut query: Query<(&mut AnimationConfig, &mut Sprite)>) {
+fn run_animations(
+    time: Res<Time>,
+    mut query: Query<(&mut AnimationConfig, &mut Sprite)>,
+) {
     for (mut config, mut sprite) in &mut query {
         config.frame_timer.tick(time.delta());
 
