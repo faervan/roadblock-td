@@ -210,9 +210,7 @@ pub fn move_enemies(
         let next = match path.next {
             Some(target_pos) => target_pos,
             None => {
-                let Some(tile) = path.steps.pop() else {
-                    unreachable!("Last step should always be the goal, at which point the EnemyPath should be removed")
-                };
+                let tile = path.steps.pop().unwrap();
                 let orientation = match (tile.row > enemy.current.row, tile.col > enemy.current.col) {
                     (true, false) => Orientation::Up,
                     (false, true) => Orientation::Right,
@@ -290,19 +288,8 @@ pub fn move_enemies(
             }
         };
         let direction = next - pos.translation;
-        // The enemy should never move on the Z axis
-        if direction.z != 0. {
-            panic!(
-                "It happened! Some enemy went mad!\n next: {next}\n pos.translation: {}\n direction: {direction}\n\n enemy: {enemy:#?}\n\n enemy_path: {path:#?}",
-                pos.translation
-            );
-        }
-        pos.translation += direction.normalize() * time.delta_secs() * enemy.velocity();
-        if pos.translation.z != 2. {
-            panic!(
-                "It will happen! Some enemy will go mad!\n next: {next}\n pos.translation: {}\n direction: {direction}\n\n enemy: {enemy:#?}\n\n enemy_path: {path:#?}",
-                pos.translation
-            );
+        if direction.element_sum() != 0. {
+            pos.translation += direction.normalize() * time.delta_secs() * enemy.velocity();
         }
         if pos.translation.distance(next) >= direction.length() {
             path.next = None;
