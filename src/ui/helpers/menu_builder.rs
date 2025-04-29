@@ -28,7 +28,7 @@ pub fn build_menu<T: Component, F>(
         ))
         .with_children(|ui| {
             ui.spawn((
-                Name::new("Menu background image"),
+                Name::new(format!("{menu_name} image")),
                 UiLayout::solid()
                     .size((Ab(1920.), Ab(1080.)))
                     .scaling(Scaling::Fill)
@@ -39,7 +39,7 @@ pub fn build_menu<T: Component, F>(
             let x_offset = button_width / 2.;
             let y_offset = (button_height + button_gap) * buttons.len() as f32 * 0.5;
             ui.spawn((
-                Name::new("Main menu boundary"),
+                Name::new(format!("{menu_name} boundary")),
                 UiLayout::boundary()
                     .pos1((Rl(50.) - Ab(x_offset), Rl(50.) - Ab(y_offset)))
                     .pos2((Rl(50.) + Ab(x_offset), Rl(50.) + Ab(y_offset)))

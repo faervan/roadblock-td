@@ -7,6 +7,7 @@ use bevy_lunex::{
 use crate::{
     app_state::{AppState, GameState},
     game_loop::{Currency, WaveInfo, WaveStart, insert_wave_info},
+    ui::helpers::ui_hover_state,
 };
 
 pub struct TopBarPlugin;
@@ -72,7 +73,10 @@ fn build_ui(
                     Transform::from_translation(Vec3::Z * 5.),
                     UiTextSize::from(Rh(5.)),
                     Text2d::new(format!("Wave 0/{}", wave.last)),
-                ));
+                ))
+                .observe(ui_hover_state::<Pointer<Over>, true>)
+                .observe(ui_hover_state::<Pointer<Out>, false>);
+
                 ui.spawn((
                     Name::new("Currency info"),
                     UiLayout::solid()
@@ -87,7 +91,9 @@ fn build_ui(
                     Transform::from_translation(Vec3::Z * 5.),
                     UiTextSize::from(Rh(5.)),
                     Text2d::new(""),
-                ));
+                ))
+                .observe(ui_hover_state::<Pointer<Over>, true>)
+                .observe(ui_hover_state::<Pointer<Out>, false>);
             });
         })
         .set_parent(*camera);

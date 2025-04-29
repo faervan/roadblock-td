@@ -11,6 +11,7 @@ impl Plugin for AppStatePlugin {
             .add_sub_state::<MenuState>()
             .add_sub_state::<GameState>()
             .add_sub_state::<TowerPlacingState>()
+            .add_sub_state::<UiHoverState>()
             .add_sub_state::<WaveState>()
             .add_systems(Startup, set_app_state)
             .add_systems(
@@ -58,6 +59,14 @@ pub enum GameState {
 #[source(AppState = AppState::Game)]
 pub enum TowerPlacingState {
     Placing,
+    #[default]
+    None,
+}
+
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash, SubStates)]
+#[source(AppState = AppState::Game)]
+pub enum UiHoverState {
+    Hovering,
     #[default]
     None,
 }

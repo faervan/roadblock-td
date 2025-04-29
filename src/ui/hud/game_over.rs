@@ -3,7 +3,7 @@ use bevy::prelude::*;
 use crate::{
     app_state::GameState,
     game_loop::GameStatistics,
-    ui::{TEXT_COLOR, despawn_menu},
+    ui::{TEXT_COLOR, despawn_menu, helpers::ui_hover_state},
 };
 
 pub struct GameOverPlugin;
@@ -93,6 +93,8 @@ fn build_game_over_info(mut commands: Commands, stats: Res<GameStatistics>) {
                 stat_row(p, "Enemies killed:", stats.enemies_killed);
                 stat_row(p, "Money earned:", stats.money_earned);
                 stat_row(p, "Money spend:", stats.money_spend);
-            });
+            })
+            .observe(ui_hover_state::<Pointer<Over>, true>)
+            .observe(ui_hover_state::<Pointer<Out>, false>);
         });
 }

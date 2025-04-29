@@ -8,7 +8,7 @@ use bevy::{
 
 use crate::{
     Orientation,
-    app_state::{GameState, TowerPlacingState},
+    app_state::{GameState, TowerPlacingState, UiHoverState},
     enemy::PathChangedEvent,
     game_loop::{Currency, GameStatistics},
     grid::{
@@ -38,7 +38,10 @@ impl Plugin for TowerPlacingPlugin {
                                 .or(input_pressed(KeyCode::ShiftLeft)
                                     .and(input_pressed(MouseButton::Left))),
                         )
-                        .run_if(in_state(GameState::Running)),
+                        .run_if(
+                            in_state(GameState::Running)
+                                .and(not(in_state(UiHoverState::Hovering))),
+                        ),
                     change_rotation.run_if(input_just_pressed(KeyCode::KeyR)),
                     update_preview,
                     exit_tower_place_state.run_if(input_just_pressed(KeyCode::KeyQ)),
