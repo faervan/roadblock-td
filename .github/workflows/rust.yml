@@ -21,8 +21,8 @@ jobs:
           - beta
     steps:
       - uses: actions/checkout@v4
-      - name: Install mold
-        run: sudo apt-get install -y mold
+      - name: Install mold and alsa-sys
+        run: sudo apt-get install -y mold librust-alsa-sys-dev
       - run: rustup update ${{ matrix.toolchain }} && rustup default ${{ matrix.toolchain }}
       - run: cargo build --verbose
       
@@ -35,8 +35,8 @@ jobs:
           - beta
     steps:
       - uses: actions/checkout@v4
-      - name: Install mold
-        run: sudo apt-get install -y mold
+      - name: Install mold and alsa-sys
+        run: sudo apt-get install -y mold librust-alsa-sys-dev
       - run: rustup update ${{ matrix.toolchain }} && rustup default ${{ matrix.toolchain }}
       - run: cargo test --verbose
       
@@ -49,8 +49,8 @@ jobs:
           - beta
     steps:
       - uses: actions/checkout@v4
-      - name: Install mold
-        run: sudo apt-get install -y mold
+      - name: Install mold and alsa-sys
+        run: sudo apt-get install -y mold librust-alsa-sys-dev
       - run: rustup update ${{ matrix.toolchain }} && rustup default ${{ matrix.toolchain }}
       - run: rustup component add clippy
       - run: cargo clippy --verbose
