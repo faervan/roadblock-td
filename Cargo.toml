@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-bevy = { version = "0.15.3", features = ["wayland"] }
+bevy = { version = "0.15.3" }
 bevy-inspector-egui = "0.30.0"
 bevy_lunex = "0.3.2"
 fastrand = "2.3.0"

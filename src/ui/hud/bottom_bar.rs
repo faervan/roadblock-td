@@ -69,6 +69,7 @@ mod tower_selection {
         Settings,
         app_state::TowerPlacingState,
         tower::{SelectedTower, Tower, TowerType},
+        ui::helpers::ui_hover_state,
     };
 
     // I would have automated this but I don't think it is possible :/
@@ -135,6 +136,8 @@ mod tower_selection {
                 })
                 .observe(hover_set::<Pointer<Over>, true>)
                 .observe(hover_set::<Pointer<Out>, false>)
+                .observe(ui_hover_state::<Pointer<Over>, true>)
+                .observe(ui_hover_state::<Pointer<Out>, false>)
                 .observe(
                     |_: Trigger<Pointer<Click>>,
                      mut selection: ResMut<SelectedTower>,
@@ -161,7 +164,7 @@ mod player_health {
     use bevy::prelude::*;
     use bevy_lunex::{Rh, UiLayout, UiTextSize};
 
-    use crate::{enemy::EnemyGoal, health::Health};
+    use crate::{enemy::EnemyGoal, health::Health, ui::helpers::ui_hover_state};
 
     #[derive(Component, Reflect)]
     #[reflect(Component)]
@@ -208,7 +211,9 @@ mod player_health {
                     },
                     PickingBehavior::IGNORE,
                 ));
-            });
+            })
+            .observe(ui_hover_state::<Pointer<Over>, true>)
+            .observe(ui_hover_state::<Pointer<Out>, false>);
     }
 
     pub fn update_player_health(
