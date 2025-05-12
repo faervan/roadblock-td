@@ -2,9 +2,9 @@ use bevy::{color::palettes::css::RED, prelude::*};
 
 use crate::{
     app_state::GameState,
-    enemy::{Enemy, EnemyGoal},
+    enemy::{Enemy, EnemyGoal, PathChangedEvent},
     game_loop::{Currency, GameStatistics},
-    grid::TILE_SIZE,
+    grid::{Grid, TILE_SIZE},
     health::Health,
 };
 
@@ -122,6 +122,8 @@ pub fn projectile_damage(
     mut enemy: Query<(&Transform, &mut Health, Entity, &Enemy)>,
     mut stats: ResMut<GameStatistics>,
     mut currency: ResMut<Currency>,
+    mut grid: ResMut<Grid>,
+    mut path_change: EventWriter<PathChangedEvent>,
 ) {
     for (projectile_transform, projectile, projectile_entity) in projectile.iter() {
         for (enemy_transform, mut health, enemy_entity, enemy) in enemy.iter_mut() {
@@ -136,6 +138,16 @@ pub fn projectile_damage(
                     **currency += enemy.reward();
                     stats.enemies_killed += 1;
                     stats.money_earned += enemy.reward();
+                    match grid.death_count.get_mut(&enemy.current) {
+                        Some(count) => {
+                            *count += 1;
+                            path_change
+                                .send(PathChangedEvent::now_blocked(vec![enemy.current]));
+                        }
+                        None => {
+                            grid.death_count.insert(enemy.current, 1);
+                        }
+                    }
                 }
                 commands.entity(projectile_entity).despawn_recursive();
             }

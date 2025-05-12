@@ -67,13 +67,15 @@ impl PathChangedEvent {
     }
 }
 
+/// `tiles` maps a `tower_entity` and a `travel_cost` to every `GridPos`
 fn try_get_target(
     tiles: &HashMap<GridPos, (Entity, usize)>,
     enemy: &Enemy,
     goals: &HashMap<GridPos, Entity>,
+    death_count: &HashMap<GridPos, usize>,
 ) -> Option<(HashMap<GridPos, GridPos>, GridPos)> {
     let distance = enemy.current.distance_to_closest(goals);
-    let default_travel_cost = (enemy.velocity() / TILE_SIZE) as usize;
+    let default_travel_cost = (enemy.velocity() * 2. / TILE_SIZE) as usize;
 
     // This is the A* algorithm, see https://www.youtube.com/watch?v=-L-WgKMFuhE
 
@@ -95,13 +97,13 @@ fn try_get_target(
         }
 
         for (neighbor, nb_tower_entity, travel_cost) in
-            tile.neighbors(tiles, default_travel_cost)
+            tile.neighbors(tiles, default_travel_cost, death_count)
         {
             if closed.contains_key(&neighbor) {
                 continue;
             }
             let new_nb_g_cost = g_cost
-                + if tower_entity.as_ref() == nb_tower_entity {
+                + if tower_entity.is_some_and(|id| Some(&id) == nb_tower_entity) {
                     default_travel_cost
                 } else {
                     travel_cost
@@ -161,15 +163,14 @@ fn enemy_get_path(
                 .collect(),
             enemy,
             &grid.enemy_goals,
+            &grid.death_count,
         ) {
             let path = get_path(closed, enemy, goal);
             if !path.is_empty() {
                 commands.entity(entity).insert(EnemyPath::new(path));
-                return;
             }
         } else {
-            info!("No path was found! Despawning!");
-            commands.entity(entity).despawn_recursive();
+            unreachable!("No path was found! This shouldn't be possible.");
         }
     }
 }
@@ -195,20 +196,21 @@ fn check_for_broken_paths(
                 .remove::<EnemyPath>()
                 .remove::<Attacking>();
         }
-        return;
     }
-    'outer: for (path, entity) in &enemies {
-        if path
-            .steps
-            .last()
-            .is_some_and(|tile| blocked_tiles.contains(&tile))
-        {
-            continue;
-        }
-        for tile in &blocked_tiles {
-            if path.steps.contains(tile) {
-                commands.entity(entity).remove::<EnemyPath>();
-                continue 'outer;
+    if !blocked_tiles.is_empty() {
+        'outer: for (path, entity) in &enemies {
+            if path
+                .steps
+                .last()
+                .is_some_and(|tile| blocked_tiles.contains(&tile))
+            {
+                continue;
+            }
+            for tile in &blocked_tiles {
+                if path.steps.contains(tile) {
+                    commands.entity(entity).remove::<EnemyPath>();
+                    continue 'outer;
+                }
             }
         }
     }

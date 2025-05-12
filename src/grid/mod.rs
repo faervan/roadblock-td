@@ -1,3 +1,5 @@
+use std::time::Duration;
+
 use bevy::prelude::*;
 use bevy::utils::{HashMap, HashSet};
 
@@ -20,8 +22,11 @@ pub struct GridPlugin;
 impl Plugin for GridPlugin {
     fn build(&self, app: &mut App) {
         app.register_type::<Grid>();
-        app.init_resource::<Grid>();
         app.add_systems(OnEnter(AppState::Game), spawn_grid);
+        app.add_systems(
+            Update,
+            decrease_death_count.run_if(in_state(AppState::Game)),
+        );
         app.add_systems(OnExit(AppState::Game), exit);
     }
 }
@@ -36,19 +41,38 @@ pub struct Grid {
     pub enemy_spawners: HashMap<GridPos, Entity>,
     pub enemy_goals: HashMap<GridPos, Entity>,
     pub unbuildable: HashSet<GridPos>,
+    pub death_count: HashMap<GridPos, usize>,
+    death_count_reset_timer: Timer,
 }
 
 impl Grid {
+    pub fn new() -> Self {
+        Self {
+            death_count_reset_timer: Timer::new(
+                Duration::from_secs(6),
+                TimerMode::Repeating,
+            ),
+            ..Default::default()
+        }
+    }
+
     pub fn is_free(&self, position: &GridPos) -> bool {
         !self.towers.contains_key(position)
             && !self.enemy_spawners.contains_key(position)
             && !self.enemy_goals.contains_key(position)
             && !self.unbuildable.contains(position)
     }
+
+    fn decrease_death_count(&mut self) {
+        for count in self.death_count.values_mut() {
+            *count -= 1;
+        }
+        self.death_count.retain(|_, count| *count > 0);
+    }
 }
 
 pub fn spawn_grid(mut commands: Commands) {
-    commands.insert_resource(Grid::default());
+    commands.insert_resource(Grid::new());
 
     let position = |total: f32, current| {
         (-(total * 0.5 * TILE_SIZE) + current * TILE_SIZE) - TILE_SIZE * 0.5
@@ -99,6 +123,13 @@ pub fn spawn_grid(mut commands: Commands) {
                 ..default()
             },
         ));
+    }
+}
+
+fn decrease_death_count(time: Res<Time>, mut grid: ResMut<Grid>) {
+    grid.death_count_reset_timer.tick(time.delta());
+    if grid.death_count_reset_timer.finished() {
+        grid.decrease_death_count();
     }
 }
 
