@@ -41,7 +41,7 @@ pub struct Grid {
     pub enemy_spawners: HashMap<GridPos, Entity>,
     pub enemy_goals: HashMap<GridPos, Entity>,
     pub unbuildable: HashSet<GridPos>,
-    pub death_count: HashMap<GridPos, f32>,
+    pub death_count: HashMap<GridPos, usize>,
     death_count_reset_timer: Timer,
 }
 
@@ -65,9 +65,9 @@ impl Grid {
 
     fn decrease_death_count(&mut self) {
         for count in self.death_count.values_mut() {
-            *count -= 1.;
+            *count -= 1;
         }
-        self.death_count.retain(|_, count| *count > 0.);
+        self.death_count.retain(|_, count| *count > 0);
     }
 }
 

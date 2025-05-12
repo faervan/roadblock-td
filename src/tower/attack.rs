@@ -140,12 +140,12 @@ pub fn projectile_damage(
                     stats.money_earned += enemy.reward();
                     match grid.death_count.get_mut(&enemy.current) {
                         Some(count) => {
-                            *count += 1.;
+                            *count += 1;
                             path_change
                                 .send(PathChangedEvent::now_blocked(vec![enemy.current]));
                         }
                         None => {
-                            grid.death_count.insert(enemy.current, 1.);
+                            grid.death_count.insert(enemy.current, 1);
                         }
                     }
                 }

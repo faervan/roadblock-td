@@ -72,7 +72,7 @@ fn try_get_target(
     tiles: &HashMap<GridPos, (Entity, usize)>,
     enemy: &Enemy,
     goals: &HashMap<GridPos, Entity>,
-    death_count: &HashMap<GridPos, f32>,
+    death_count: &HashMap<GridPos, usize>,
 ) -> Option<(HashMap<GridPos, GridPos>, GridPos)> {
     let distance = enemy.current.distance_to_closest(goals);
     let default_travel_cost = (enemy.velocity() * 2. / TILE_SIZE) as usize;
