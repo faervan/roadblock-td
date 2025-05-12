@@ -129,6 +129,7 @@ impl GridPos {
         &'a self,
         towers: &'a HashMap<GridPos, (Entity, usize)>,
         default_travel_cost: usize,
+        death_count: &HashMap<GridPos, f32>,
     ) -> Vec<(GridPos, Option<&'a Entity>, usize)> {
         let mut neighbors = vec![];
 
@@ -139,7 +140,17 @@ impl GridPos {
                     Some((entity, travel_cost)) => {
                         neighbors.push((tile, Some(entity), *travel_cost))
                     }
-                    None => neighbors.push((tile, None, default_travel_cost)),
+                    None => {
+                        // Increases the travel_cost by 2000% per death on the field
+                        let multiplier =
+                            death_count.get(&tile).map(|c| 1. + c * 20.).unwrap_or(1.);
+
+                        neighbors.push((
+                            tile,
+                            None,
+                            (default_travel_cost as f32 * multiplier) as usize,
+                        ));
+                    }
                 }
             }
         };
