@@ -2,6 +2,7 @@ use app_state::AppStatePlugin;
 use bevy::{
     audio::{AudioPlugin, Volume},
     prelude::*,
+    window::WindowResolution,
 };
 use bevy_inspector_egui::quick::WorldInspectorPlugin;
 use bevy_lunex::UiSourceCamera;
@@ -38,6 +39,8 @@ fn main() {
                     mode: bevy::window::WindowMode::BorderlessFullscreen(
                         MonitorSelection::Primary,
                     ),
+                    resolution: WindowResolution::default()
+                        .with_scale_factor_override(1.),
                     ..default()
                 }),
                 ..default()
