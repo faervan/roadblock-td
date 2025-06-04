@@ -48,6 +48,7 @@ fn build_ui(
             Name::new("Top bar root"),
             UiLayoutRoot::new_2d(),
             UiFetchFromCamera::<0>,
+            ChildOf(*camera),
         ))
         .with_children(|ui| {
             // Spawn boundary node
@@ -95,8 +96,7 @@ fn build_ui(
                 .observe(ui_hover_state::<Pointer<Over>, true>)
                 .observe(ui_hover_state::<Pointer<Out>, false>);
             });
-        })
-        .set_parent(*camera);
+        });
 }
 
 fn update_wave(

@@ -111,7 +111,7 @@ fn move_projectile(
                 .move_towards(target.translation, projectile.speed * time.delta_secs());
         } else {
             warn!("target enemy no longer exists, despawning projectile");
-            commands.entity(entity).despawn_recursive();
+            commands.entity(entity).despawn();
         }
     }
 }
@@ -134,22 +134,23 @@ pub fn projectile_damage(
             {
                 **health -= projectile.damage;
                 if **health <= 0 {
-                    commands.entity(enemy_entity).despawn_recursive();
+                    commands.entity(enemy_entity).despawn();
                     **currency += enemy.reward();
                     stats.enemies_killed += 1;
                     stats.money_earned += enemy.reward();
                     match grid.death_count.get_mut(&enemy.current) {
                         Some(count) => {
                             *count += 1;
-                            path_change
-                                .send(PathChangedEvent::now_blocked(vec![enemy.current]));
+                            path_change.write(PathChangedEvent::now_blocked(vec![
+                                enemy.current,
+                            ]));
                         }
                         None => {
                             grid.death_count.insert(enemy.current, 1);
                         }
                     }
                 }
-                commands.entity(projectile_entity).despawn_recursive();
+                commands.entity(projectile_entity).despawn();
             }
         }
     }

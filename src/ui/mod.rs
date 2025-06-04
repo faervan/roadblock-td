@@ -24,6 +24,6 @@ impl Plugin for UIPlugin {
 
 fn despawn_menu<T: Component>(mut commands: Commands, entities: Query<Entity, With<T>>) {
     for entity in &entities {
-        commands.entity(entity).despawn_recursive();
+        commands.entity(entity).despawn();
     }
 }

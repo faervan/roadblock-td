@@ -3,7 +3,7 @@ use std::{
     ops::Add,
 };
 
-use bevy::{prelude::*, utils::HashMap};
+use bevy::{platform::collections::HashMap, prelude::*};
 use fastrand::Rng;
 
 use super::{COLUMNS, ROWS};

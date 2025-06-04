@@ -153,7 +153,7 @@ pub fn place_tower(
                 **currency -= tower.cost();
                 stats.money_spend += tower.cost();
 
-                event_writer.send(PathChangedEvent::now_blocked(
+                event_writer.write(PathChangedEvent::now_blocked(
                     tower.fill_grid(&grid_pos, &mut grid, entity),
                 ));
 
@@ -190,7 +190,7 @@ fn spawn_preview(mut commands: Commands) {
 }
 
 fn despawn_preview(mut commands: Commands, preview: Query<Entity, With<TowerPreview>>) {
-    if let Ok(preview) = preview.get_single() {
+    if let Ok(preview) = preview.single() {
         commands.entity(preview).despawn();
     }
 }
@@ -205,8 +205,8 @@ fn update_preview(
         (&mut Sprite, &mut Transform, &mut Visibility),
         With<TowerPreview>,
     >,
-) {
-    let (mut sprite, mut transform, mut visibility) = preview.single_mut();
+) -> Result {
+    let (mut sprite, mut transform, mut visibility) = preview.single_mut()?;
 
     let mouse_pos = window.cursor_position();
 
@@ -263,6 +263,8 @@ fn update_preview(
             warn!("Unable to get Cursor Position {:?}", world_pos.unwrap_err())
         }
     }
+
+    Ok(())
 }
 
 fn apply_offset(

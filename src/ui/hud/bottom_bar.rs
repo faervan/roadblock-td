@@ -29,6 +29,7 @@ fn build_ui(
             Name::new("Bottom bar root"),
             UiLayoutRoot::new_2d(),
             UiFetchFromCamera::<0>,
+            ChildOf(*camera),
         ))
         .with_children(|ui| {
             // Spawn boundary node
@@ -54,8 +55,7 @@ fn build_ui(
                         player_health::build(p, &mut materials, &mut meshes)
                     });
             });
-        })
-        .set_parent(*camera);
+        });
 }
 
 mod tower_selection {
@@ -80,7 +80,10 @@ mod tower_selection {
     const BUTTON_COLOR: Color = Color::srgb(0.3, 0.3, 0.3);
     const BUTTON_COLOR_HOVER: Color = Color::srgb(1., 0., 0.);
 
-    pub fn build(builder: &mut ChildBuilder, materials: &mut Assets<ColorMaterial>) {
+    pub fn build(
+        builder: &mut ChildSpawnerCommands,
+        materials: &mut Assets<ColorMaterial>,
+    ) {
         for (index, tower) in TYPES.iter().enumerate() {
             builder
                 .spawn((
@@ -123,7 +126,7 @@ mod tower_selection {
                                 Rl(100.) - Ab(icon_margin_y),
                             ))
                             .pack(),
-                        PickingBehavior::IGNORE,
+                        Pickable::IGNORE,
                     ))
                     .with_child((
                         UiLayout::solid()
@@ -131,7 +134,7 @@ mod tower_selection {
                             .pack(),
                         UiMeshPlane2d,
                         MeshMaterial2d(materials.add(Color::srgb(0., 0.5, 1.))),
-                        PickingBehavior::IGNORE,
+                        Pickable::IGNORE,
                     ));
                 })
                 .observe(hover_set::<Pointer<Over>, true>)
@@ -175,7 +178,7 @@ mod player_health {
     pub struct PlayerHpTextMarker;
 
     pub fn build(
-        builder: &mut ChildBuilder,
+        builder: &mut ChildSpawnerCommands,
         materials: &mut Assets<ColorMaterial>,
         meshes: &mut Assets<Mesh>,
     ) {
@@ -192,13 +195,13 @@ mod player_health {
                     UiLayout::solid().pack(),
                     Mesh2d(meshes.add(CircularSector::new(75., PI))),
                     MeshMaterial2d(materials.add(Color::srgb(0., 255., 0.))),
-                    PickingBehavior::IGNORE,
+                    Pickable::IGNORE,
                 ))
                 .with_child((
                     Transform::from_translation(Vec3::Z),
                     Mesh2d(meshes.add(Circle::new(65.))),
                     MeshMaterial2d(materials.add(Color::BLACK)),
-                    PickingBehavior::IGNORE,
+                    Pickable::IGNORE,
                 ));
                 p.spawn((
                     PlayerHpTextMarker,
@@ -209,7 +212,7 @@ mod player_health {
                         font_size: 25.,
                         ..default()
                     },
-                    PickingBehavior::IGNORE,
+                    Pickable::IGNORE,
                 ));
             })
             .observe(ui_hover_state::<Pointer<Over>, true>)
@@ -223,7 +226,7 @@ mod player_health {
         mut hp_text: Single<&mut Text2d, With<PlayerHpTextMarker>>,
         mut commands: Commands,
     ) {
-        if let Ok(health) = query.get_single() {
+        if let Ok(health) = query.single() {
             commands.entity(hp_circle.0).insert(Mesh2d(
                 meshes.add(CircularSector::new(hp_circle.1.0, health.percentage() * PI)),
             ));

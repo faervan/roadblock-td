@@ -1,6 +1,6 @@
 use std::time::Duration;
 
-use bevy::{prelude::*, utils::HashMap};
+use bevy::{platform::collections::HashMap, prelude::*};
 
 use crate::{
     app_state::{AppState, GameState, WaveState},
@@ -99,7 +99,7 @@ fn count_wave_margin(
             .cloned()
             .unwrap_or_default();
         wave.current_spawners += spawners.len();
-        events.send(WaveStart {
+        events.write(WaveStart {
             current: wave.current,
             new_spawners: spawners,
         });

@@ -68,8 +68,8 @@ fn add_health_bar(
                 .spawn((
                     Sprite::from_color(Color::BLACK, Vec2::new(40., 8.)),
                     Transform::from_translation(health.offset.extend(1.)),
+                    ChildOf(entity),
                 ))
-                .set_parent(entity)
                 .id();
             let childs_child = commands
                 .spawn((
@@ -81,8 +81,8 @@ fn add_health_bar(
                         ..Default::default()
                     },
                     Transform::from_translation(Vec3::new(-20., 0., 1.)),
+                    ChildOf(child),
                 ))
-                .set_parent(child)
                 .id();
             commands.entity(entity).insert(HasHealthBar {
                 child,

@@ -20,7 +20,7 @@ impl Plugin for GameOverPlugin {
 #[reflect(Component)]
 struct GameOverMarker;
 
-fn stat_row(p: &mut ChildBuilder, key: impl ToString, value: impl ToString) {
+fn stat_row(p: &mut ChildSpawnerCommands, key: impl ToString, value: impl ToString) {
     p.spawn(Node {
         width: Val::Percent(100.),
         justify_content: JustifyContent::SpaceBetween,
