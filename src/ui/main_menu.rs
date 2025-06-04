@@ -60,7 +60,7 @@ fn action(button: &str) -> fn(&mut EntityCommands) {
         "Quit" => |cmds: &mut EntityCommands| {
             cmds.observe(
                 |_: Trigger<Pointer<Click>>, mut app_exit: EventWriter<AppExit>| {
-                    app_exit.send(AppExit::Success);
+                    app_exit.write(AppExit::Success);
                 },
             );
         },

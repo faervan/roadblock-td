@@ -55,6 +55,7 @@ fn build_ui(
             Name::new("Wave start root"),
             UiLayoutRoot::new_2d(),
             UiFetchFromCamera::<0>,
+            ChildOf(*camera),
         ))
         .with_children(|ui| {
             ui.spawn((
@@ -91,8 +92,7 @@ fn build_ui(
                     },
                 ));
             });
-        })
-        .set_parent(*camera);
+        });
 }
 
 fn update_loading_bar(

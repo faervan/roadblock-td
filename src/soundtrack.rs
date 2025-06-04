@@ -1,4 +1,4 @@
-use bevy::prelude::*;
+use bevy::{audio::Volume, prelude::*};
 
 use crate::{Settings, app_state::AppState};
 
@@ -47,7 +47,7 @@ fn spawn_track(commands: &mut Commands, track: Handle<AudioSource>) {
         AudioPlayer(track),
         PlaybackSettings {
             mode: bevy::audio::PlaybackMode::Loop,
-            volume: bevy::audio::Volume::ZERO,
+            volume: bevy::audio::Volume::SILENT,
             ..default()
         },
         FadeIn,
@@ -94,10 +94,11 @@ fn fade_in(
     mut audio_sink: Query<(&mut AudioSink, Entity), With<FadeIn>>,
     time: Res<Time>,
 ) {
-    for (audio, entity) in audio_sink.iter_mut() {
-        audio.set_volume(audio.volume() + time.delta_secs() / FADE_TIME);
-        if audio.volume() >= 1.0 {
-            audio.set_volume(1.0);
+    for (mut audio, entity) in audio_sink.iter_mut() {
+        let volume = audio.volume().to_linear();
+        audio.set_volume(Volume::Linear(volume + time.delta_secs() / FADE_TIME));
+        if audio.volume().to_linear() >= 1.0 {
+            audio.set_volume(Volume::Linear(1.));
             commands.entity(entity).remove::<FadeIn>();
         }
     }
@@ -108,10 +109,11 @@ fn fade_out(
     mut audio_sink: Query<(&mut AudioSink, Entity), With<FadeOut>>,
     time: Res<Time>,
 ) {
-    for (audio, entity) in audio_sink.iter_mut() {
-        audio.set_volume(audio.volume() - time.delta_secs() / FADE_TIME);
-        if audio.volume() <= 0.0 {
-            commands.entity(entity).despawn_recursive();
+    for (mut audio, entity) in audio_sink.iter_mut() {
+        let volume = audio.volume().to_linear();
+        audio.set_volume(Volume::Linear(volume - time.delta_secs() / FADE_TIME));
+        if audio.volume().to_linear() <= 0. {
+            commands.entity(entity).despawn();
         }
     }
 }

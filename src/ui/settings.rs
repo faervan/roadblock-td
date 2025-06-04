@@ -95,7 +95,7 @@ fn action(button: &str) -> fn(&mut EntityCommands) {
                      mut text: Single<&mut Text2d, With<SoundtrackMarker>>| {
                         settings.soundtrack_enabled = !settings.soundtrack_enabled;
                         text.0 = settings.soundtrack_label().to_string();
-                        events.send(SoundtrackToggled);
+                        events.write(SoundtrackToggled);
                     },
                 );
             }

@@ -1,7 +1,7 @@
 use std::time::Duration;
 
+use bevy::platform::collections::{HashMap, HashSet};
 use bevy::prelude::*;
-use bevy::utils::{HashMap, HashSet};
 
 pub use grid_pos::GridPos;
 

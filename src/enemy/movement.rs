@@ -1,4 +1,4 @@
-use bevy::{prelude::*, utils::HashMap};
+use bevy::{platform::collections::HashMap, prelude::*};
 
 use crate::{
     Orientation,
@@ -260,8 +260,8 @@ pub fn move_enemies(
                                 ),
                                 ..Default::default()
                             },
+                            ChildOf(entity),
                         ))
-                        .set_parent(entity)
                         .id();
 
                     commands.entity(entity).remove::<EnemyPath>().insert((

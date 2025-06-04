@@ -1,4 +1,4 @@
-use bevy::prelude::*;
+use bevy::{ecs::component::HookContext, prelude::*};
 
 use crate::{
     app_state::GameState,
@@ -25,9 +25,9 @@ impl Plugin for EnemyAttackPlugin {
         );
         app.world_mut()
             .register_component_hooks::<Attacking>()
-            .on_remove(|mut world, entity, _| {
+            .on_remove(|mut world, HookContext { entity, .. }: HookContext| {
                 let weapon_id = world.get::<Attacking>(entity).unwrap().weapon_id;
-                if let Some(mut entity_cmds) = world.commands().get_entity(weapon_id) {
+                if let Ok(mut entity_cmds) = world.commands().get_entity(weapon_id) {
                     entity_cmds.despawn();
                 }
             });
@@ -77,8 +77,8 @@ fn enemy_attacking(
             **health -= enemy.damage();
 
             if **health <= 0 {
-                commands.entity(attacking.target).despawn_recursive();
-                event_writer.send(PathChangedEvent::now_free(
+                commands.entity(attacking.target).despawn();
+                event_writer.write(PathChangedEvent::now_free(
                     tower.clear_grid(&mut grid, attacking.target),
                 ));
             }
@@ -87,7 +87,7 @@ fn enemy_attacking(
 
             if **enemy_health <= 0 {
                 **currency += enemy.reward();
-                commands.entity(entity).despawn_recursive();
+                commands.entity(entity).despawn();
 
                 return;
             }
@@ -124,7 +124,7 @@ fn enemy_attacking_goal(
             **currency += enemy.reward();
             stats.money_earned += enemy.reward();
             stats.enemies_killed += 1;
-            commands.entity(entity).despawn_recursive();
+            commands.entity(entity).despawn();
         }
 
         ***goal_health -= enemy.damage();

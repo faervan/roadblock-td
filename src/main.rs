@@ -1,5 +1,8 @@
 use app_state::AppStatePlugin;
-use bevy::{audio::AudioPlugin, prelude::*};
+use bevy::{
+    audio::{AudioPlugin, Volume},
+    prelude::*,
+};
 use bevy_inspector_egui::quick::WorldInspectorPlugin;
 use bevy_lunex::UiSourceCamera;
 use enemy::EnemyPlugin;
@@ -40,7 +43,7 @@ fn main() {
                 ..default()
             })
             .set(AudioPlugin {
-                global_volume: GlobalVolume::new(0.1),
+                global_volume: GlobalVolume::new(Volume::Linear(0.1)),
                 ..Default::default()
             }),
     );
@@ -144,7 +147,7 @@ fn setup(mut commands: Commands) {
 
 fn exit_on_ctrl_q(mut app_exit: EventWriter<AppExit>, input: Res<ButtonInput<KeyCode>>) {
     if input.pressed(KeyCode::ControlLeft) && input.just_pressed(KeyCode::KeyQ) {
-        app_exit.send(AppExit::Success);
+        app_exit.write(AppExit::Success);
     }
 }
 

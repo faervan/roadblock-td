@@ -1,8 +1,8 @@
 use bevy::prelude::*;
 use bevy_lunex::{
-    Ab, Anchor, OnHoverSetCursor, Rh, Rl, Scaling, UiBase, UiColor, UiDepth,
-    UiFetchFromCamera, UiHover, UiLayout, UiLayoutRoot, UiStateTrait, UiTextSize,
-    hover_set,
+    Ab, OnHoverSetCursor, Rh, Rl, Scaling, UiBase, UiColor, UiDepth, UiFetchFromCamera,
+    UiHover, UiLayout, UiLayoutRoot, UiStateTrait, UiTextSize, hover_set,
+    prelude::Anchor,
 };
 
 use crate::Settings;
@@ -88,7 +88,7 @@ fn build_button<F>(
                     ),
                 ]),
                 UiHover::new().forward_speed(40.).backward_speed(8.),
-                PickingBehavior::IGNORE,
+                Pickable::IGNORE,
             ))
             .with_children(|p| {
                 p.spawn((
@@ -100,7 +100,7 @@ fn build_button<F>(
                         .pack(),
                     UiDepth::Add(-1.),
                     Sprite::from_image(asset_server.load("button_border.png")),
-                    PickingBehavior::IGNORE,
+                    Pickable::IGNORE,
                 ))
                 .with_children(|p| {
                     p.spawn((
@@ -112,7 +112,7 @@ fn build_button<F>(
                         ]),
                         UiHover::new().forward_speed(40.).backward_speed(8.),
                         Sprite::from_image(asset_server.load("button_highlight.png")),
-                        PickingBehavior::IGNORE,
+                        Pickable::IGNORE,
                     ));
                 });
                 let mut text_cmds = p.spawn((
@@ -126,7 +126,7 @@ fn build_button<F>(
                         ..Default::default()
                     },
                     Text2d::new(button),
-                    PickingBehavior::IGNORE,
+                    Pickable::IGNORE,
                 ));
                 if let Some(modifier) = text_entity_modifier {
                     modifier(&mut text_cmds);
